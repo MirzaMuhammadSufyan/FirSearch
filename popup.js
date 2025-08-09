@@ -86,6 +86,7 @@ tabToggles.forEach(({ id, storage, msg }) => {
 
 // Tab switching logic
 const tabBtns = [
+  { btn: document.getElementById('tab-firlist'), panel: document.getElementById('tabPanel-firlist') },
   { btn: document.getElementById('tab-search'), panel: document.getElementById('tabPanel-search') },
   { btn: document.getElementById('tab-editfir'), panel: document.getElementById('tabPanel-editfir') }
   // Add more tabs here in the future
@@ -100,7 +101,7 @@ tabBtns.forEach(({ btn, panel }, idx) => {
     panel.style.display = 'block';
   });
 });
-// Default to first tab
+// Default to first tab (Bulk FIR List Page)
 if (tabBtns.length > 0) {
   tabBtns[0].btn.classList.add('active');
   tabBtns[0].panel.style.display = 'block';

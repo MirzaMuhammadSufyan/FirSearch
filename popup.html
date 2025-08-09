@@ -10,17 +10,21 @@
   </style>
 </head>
 <body>
-  <h3>Bulk FIR Search</h3>
-  <textarea id="firNumbers" placeholder="Enter FIR numbers separated by space or newline..."></textarea>
-  <button id="openAll">Open All</button>
-  <button id="stopAll" style="margin-top:8px;background:#d9534f;color:white;">Stop</button>
   <div style="margin-top:16px;">
     <div id="popupTabs" style="display:flex;gap:8px;border-bottom:1px solid #ccc;margin-bottom:8px;">
-      <button id="tab-search" class="tab-btn active" style="flex:1;">Search Record Page</button>
+      <button id="tab-firlist" class="tab-btn active" style="flex:1;">Bulk FIR List Page</button>
+      <button id="tab-search" class="tab-btn" style="flex:1;">Search Record Page</button>
       <button id="tab-editfir" class="tab-btn" style="flex:1;">Edit FIR Page</button>
       <!-- Add more tab buttons here in the future -->
     </div>
-    <div id="tabPanel-search" class="tab-panel" style="display:block;">
+    <div id="tabPanel-firlist" class="tab-panel" style="display:block;">
+      <h3>Bulk FIR Search</h3>
+      <textarea id="firNumbers" placeholder="Enter FIR numbers separated by space or newline..."></textarea>
+      <button id="openAll">Open All</button>
+      <button id="stopAll" style="margin-top:8px;background:#d9534f;color:white;">Stop</button>
+      <div id="status" style="margin-top:10px;color:green;"></div>
+    </div>
+    <div id="tabPanel-search" class="tab-panel" style="display:none;">
       <label style="display:flex;align-items:center;gap:8px;">
         <input type="checkbox" id="editFirToggle" />
         Auto-click Edit FIR on searchRecord page
@@ -83,7 +87,6 @@
       <!-- Add more editFIR toggles here if needed -->
     </div>
   </div>
-  <div id="status" style="margin-top:10px;color:green;"></div>
   <script src="popup.js"></script>
 </body>
 </html>
