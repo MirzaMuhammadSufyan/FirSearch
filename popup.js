@@ -83,3 +83,25 @@ tabToggles.forEach(({ id, storage, msg }) => {
     });
   });
 });
+
+// Tab switching logic
+const tabBtns = [
+  { btn: document.getElementById('tab-search'), panel: document.getElementById('tabPanel-search') },
+  { btn: document.getElementById('tab-editfir'), panel: document.getElementById('tabPanel-editfir') }
+  // Add more tabs here in the future
+];
+tabBtns.forEach(({ btn, panel }, idx) => {
+  btn.addEventListener('click', function() {
+    tabBtns.forEach(({ btn: b, panel: p }) => {
+      b.classList.remove('active');
+      p.style.display = 'none';
+    });
+    btn.classList.add('active');
+    panel.style.display = 'block';
+  });
+});
+// Default to first tab
+if (tabBtns.length > 0) {
+  tabBtns[0].btn.classList.add('active');
+  tabBtns[0].panel.style.display = 'block';
+}
