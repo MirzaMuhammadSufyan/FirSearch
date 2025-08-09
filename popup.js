@@ -53,3 +53,33 @@ mulzimanTabToggle.addEventListener('change', function() {
     });
   });
 });
+
+// Helper for tab toggles
+const tabToggles = [
+  { id: 'tab2Toggle', storage: 'autoClickTab2', msg: 'autoClickTab2' },
+  { id: 'tab4Toggle', storage: 'autoClickTab4', msg: 'autoClickTab4' },
+  { id: 'tab6Toggle', storage: 'autoClickTab6', msg: 'autoClickTab6' },
+  { id: 'tab9Toggle', storage: 'autoClickTab9', msg: 'autoClickTab9' },
+  { id: 'tab8Toggle', storage: 'autoClickTab8', msg: 'autoClickTab8' },
+  { id: 'tab7Toggle', storage: 'autoClickTab7', msg: 'autoClickTab7' },
+  { id: 'tab15Toggle', storage: 'autoClickTab15', msg: 'autoClickTab15' },
+  { id: 'tab3Toggle', storage: 'autoClickTab3', msg: 'autoClickTab3' },
+  { id: 'tab10Toggle', storage: 'autoClickTab10', msg: 'autoClickTab10' },
+  { id: 'tab17Toggle', storage: 'autoClickTab17', msg: 'autoClickTab17' },
+  { id: 'tab12Toggle', storage: 'autoClickTab12', msg: 'autoClickTab12' },
+  { id: 'tab13Toggle', storage: 'autoClickTab13', msg: 'autoClickTab13' },
+];
+tabToggles.forEach(({ id, storage, msg }) => {
+  const el = document.getElementById(id);
+  chrome.storage.sync.get([storage], function(result) {
+    el.checked = !!result[storage];
+  });
+  el.addEventListener('change', function() {
+    chrome.storage.sync.set({ [storage]: el.checked });
+    chrome.tabs.query({}, function(tabs) {
+      tabs.forEach(tab => {
+        chrome.tabs.sendMessage(tab.id, { [msg]: el.checked });
+      });
+    });
+  });
+});

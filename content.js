@@ -78,6 +78,51 @@ function tryAutoClickMulzimanTab() {
   }, 300);
 }
 
+// --- Tab auto-click toggles ---
+let tabToggles = {
+  tab2: false,  // انسدادی کاروائی
+  tab4: false,  // تاریخ سماعت
+  tab6: false,  // پوزیشن
+  tab9: false,  // انڈکس ضمنیات
+  tab8: false,  // جرم ایزاد حذف
+  tab7: false,  // منشیات اسلحہ و دیگر شواہد برآمدگی
+  tab15: false, // مال مسروقہ برآمدگی
+  tab3: false,  // تفتیش
+  tab10: false, // تفتیشی آفیسران
+  tab17: false, // نامعلوم ملزمان
+  tab12: false, // متاثرہ اشخاس
+  tab13: false  // گواہان
+};
+
+function tryAutoClickTab(tabId, urduLabel, enabled) {
+  if (!enabled) {
+    showMulzimanBanner(`Auto-click ${urduLabel} tab is disabled.`, false);
+    return;
+  }
+  let attempts = 0;
+  const maxAttempts = 30;
+  const interval = setInterval(() => {
+    const tab = document.getElementById(tabId);
+    if (tab && isElementVisible(tab)) {
+      tab.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setTimeout(() => {
+        ['mousedown', 'mouseup', 'click'].forEach(evtType => {
+          const evt = new MouseEvent(evtType, { bubbles: true, cancelable: true, view: window });
+          tab.dispatchEvent(evt);
+        });
+        showMulzimanBanner(`${urduLabel} tab auto-clicked!`, true);
+      }, 100);
+      clearInterval(interval);
+    } else if (tab && !isElementVisible(tab)) {
+      showMulzimanBanner(`${urduLabel} tab found but not visible/clickable.`, false);
+      clearInterval(interval);
+    } else if (++attempts >= maxAttempts) {
+      showMulzimanBanner(`${urduLabel} tab not found after waiting.`, false);
+      clearInterval(interval);
+    }
+  }, 300);
+}
+
 function processNextFIR() {
   if (!firBulkActive) return;
   let firBulkData = JSON.parse(localStorage.getItem('fir_bulk_data') || '{}');
@@ -129,6 +174,28 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       setTimeout(tryAutoClickMulzimanTab, 300);
     }
   }
+  // Handle all tab toggles
+  [
+    { key: 'autoClickTab2', id: 'tab-2', label: 'انسدادی کاروائی', state: 'tab2' },
+    { key: 'autoClickTab4', id: 'tab-4', label: 'تاریخ سماعت', state: 'tab4' },
+    { key: 'autoClickTab6', id: 'tab-6', label: 'پوزیشن', state: 'tab6' },
+    { key: 'autoClickTab9', id: 'tab-9', label: 'انڈکس ضمنیات', state: 'tab9' },
+    { key: 'autoClickTab8', id: 'tab-8', label: 'جرم ایزاد حذف', state: 'tab8' },
+    { key: 'autoClickTab7', id: 'tab-7', label: 'منشیات اسلحہ و دیگر شواہد برآمدگی', state: 'tab7' },
+    { key: 'autoClickTab15', id: 'tab-15', label: 'مال مسروقہ برآمدگی', state: 'tab15' },
+    { key: 'autoClickTab3', id: 'tab-3', label: 'تفتیش', state: 'tab3' },
+    { key: 'autoClickTab10', id: 'tab-10', label: 'تفتیشی آفیسران', state: 'tab10' },
+    { key: 'autoClickTab17', id: 'tab-17', label: 'نامعلوم ملزمان', state: 'tab17' },
+    { key: 'autoClickTab12', id: 'tab-12', label: 'متاثرہ اشخاس', state: 'tab12' },
+    { key: 'autoClickTab13', id: 'tab-13', label: 'گواہان', state: 'tab13' }
+  ].forEach(({ key, id, label, state }) => {
+    if (typeof request[key] === 'boolean') {
+      tabToggles[state] = request[key];
+      if (request[key] && /\/firSystem\/editFIR\//.test(window.location.href)) {
+        setTimeout(() => tryAutoClickTab(id, label, request[key]), 300);
+      }
+    }
+  });
   if (request.firBulkStop) {
     firBulkActive = false;
     localStorage.removeItem('fir_bulk_data');
@@ -142,15 +209,47 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   }
 });
 
-// On load, get the toggle state
-chrome.storage && chrome.storage.sync.get(['editFirAutoClick', 'autoClickMulzimanTab'], function(result) {
+// On load, get the toggle state for all tabs
+chrome.storage && chrome.storage.sync.get([
+  'editFirAutoClick', 'autoClickMulzimanTab',
+  'autoClickTab2', 'autoClickTab4', 'autoClickTab6', 'autoClickTab9', 'autoClickTab8', 'autoClickTab7',
+  'autoClickTab15', 'autoClickTab3', 'autoClickTab10', 'autoClickTab17', 'autoClickTab12', 'autoClickTab13'
+], function(result) {
   editFirAutoClick = !!result.editFirAutoClick;
   autoClickMulzimanTab = !!result.autoClickMulzimanTab;
+  tabToggles.tab2 = !!result.autoClickTab2;
+  tabToggles.tab4 = !!result.autoClickTab4;
+  tabToggles.tab6 = !!result.autoClickTab6;
+  tabToggles.tab9 = !!result.autoClickTab9;
+  tabToggles.tab8 = !!result.autoClickTab8;
+  tabToggles.tab7 = !!result.autoClickTab7;
+  tabToggles.tab15 = !!result.autoClickTab15;
+  tabToggles.tab3 = !!result.autoClickTab3;
+  tabToggles.tab10 = !!result.autoClickTab10;
+  tabToggles.tab17 = !!result.autoClickTab17;
+  tabToggles.tab12 = !!result.autoClickTab12;
+  tabToggles.tab13 = !!result.autoClickTab13;
   if (editFirAutoClick && window.location.href.includes('/search/searchRecord/simple')) {
     setTimeout(tryAutoClickEditFIR, 300);
   }
-  if (autoClickMulzimanTab && /\/firSystem\/editFIR\//.test(window.location.href)) {
-    setTimeout(tryAutoClickMulzimanTab, 300);
+  if (/\/firSystem\/editFIR\//.test(window.location.href)) {
+    if (autoClickMulzimanTab) setTimeout(tryAutoClickMulzimanTab, 300);
+    [
+      { id: 'tab-2', label: 'انسدادی کاروائی', state: 'tab2' },
+      { id: 'tab-4', label: 'تاریخ سماعت', state: 'tab4' },
+      { id: 'tab-6', label: 'پوزیشن', state: 'tab6' },
+      { id: 'tab-9', label: 'انڈکس ضمنیات', state: 'tab9' },
+      { id: 'tab-8', label: 'جرم ایزاد حذف', state: 'tab8' },
+      { id: 'tab-7', label: 'منشیات اسلحہ و دیگر شواہد برآمدگی', state: 'tab7' },
+      { id: 'tab-15', label: 'مال مسروقہ برآمدگی', state: 'tab15' },
+      { id: 'tab-3', label: 'تفتیش', state: 'tab3' },
+      { id: 'tab-10', label: 'تفتیشی آفیسران', state: 'tab10' },
+      { id: 'tab-17', label: 'نامعلوم ملزمان', state: 'tab17' },
+      { id: 'tab-12', label: 'متاثرہ اشخاس', state: 'tab12' },
+      { id: 'tab-13', label: 'گواہان', state: 'tab13' }
+    ].forEach(({ id, label, state }) => {
+      if (tabToggles[state]) setTimeout(() => tryAutoClickTab(id, label, true), 300);
+    });
   }
 });
 
