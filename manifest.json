@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "FIR Bulk Search",
+  "version": "1.0",
+  "description": "Bulk open FIR search tabs for Punjab Police FIR System.",
+  "content_scripts": [
+    {
+      "matches": [
+        "https://fir.punjabpolice.gov.pk/firSystem/FIRlist*",
+        "https://fir.punjabpolice.gov.pk/search/searchRecord/simple*",
+        "https://fir.punjabpolice.gov.pk/firSystem/editFIR*"
+      ],
+      "js": ["content.js"]
+    }
+  ],
+  "permissions": ["tabs", "scripting", "storage"],
+  "host_permissions": [
+    "https://fir.punjabpolice.gov.pk/firSystem/FIRlist*"
+  ],
+  "action": {
+    "default_popup": "popup.html"
+  }
+}
