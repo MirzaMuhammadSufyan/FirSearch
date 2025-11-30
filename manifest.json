@@ -8,14 +8,20 @@
       "matches": [
         "https://fir.punjabpolice.gov.pk/firSystem/FIRlist*",
         "https://fir.punjabpolice.gov.pk/search/searchRecord/simple*",
-        "https://fir.punjabpolice.gov.pk/firSystem/editFIR*"
+        "https://fir.punjabpolice.gov.pk/firSystem/editFIR*",
+        "https://fir.punjabpolice.gov.pk/register/register21",
+        "https://fir.punjabpolice.gov.pk/register/register21/0/search",
+        "https://fir.punjabpolice.gov.pk/register/roadcertificatereport/*"
       ],
       "js": ["content.js"]
     }
   ],
   "permissions": ["tabs", "scripting", "storage"],
   "host_permissions": [
-    "https://fir.punjabpolice.gov.pk/firSystem/FIRlist*"
+    "https://fir.punjabpolice.gov.pk/firSystem/FIRlist*",
+    "https://fir.punjabpolice.gov.pk/register/register21",
+    "https://fir.punjabpolice.gov.pk/register/register21/0/search",
+    "https://fir.punjabpolice.gov.pk/register/roadcertificatereport/*"
   ],
   "action": {
     "default_popup": "popup.html"

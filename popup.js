@@ -84,6 +84,38 @@ tabToggles.forEach(({ id, storage, msg }) => {
   });
 });
 
+// Auto-click رپورٹ link toggle logic
+const autoClickReportLinkToggle = document.getElementById('autoClickReportLinkToggle');
+// Restore toggle state
+chrome.storage.sync.get(['autoClickReportLink'], function(result) {
+  autoClickReportLinkToggle.checked = !!result.autoClickReportLink;
+});
+// Save toggle state and notify all tabs
+autoClickReportLinkToggle.addEventListener('change', function() {
+  chrome.storage.sync.set({ autoClickReportLink: autoClickReportLinkToggle.checked });
+  chrome.tabs.query({}, function(tabs) {
+    tabs.forEach(tab => {
+      chrome.tabs.sendMessage(tab.id, { autoClickReportLink: autoClickReportLinkToggle.checked });
+    });
+  });
+});
+
+// Print message on road certificate report page toggle logic
+const printRoadCertMsgToggle = document.getElementById('printRoadCertMsgToggle');
+// Restore toggle state
+chrome.storage.sync.get(['printRoadCertMsg'], function(result) {
+  printRoadCertMsgToggle.checked = !!result.printRoadCertMsg;
+});
+// Save toggle state and notify all tabs
+printRoadCertMsgToggle.addEventListener('change', function() {
+  chrome.storage.sync.set({ printRoadCertMsg: printRoadCertMsgToggle.checked });
+  chrome.tabs.query({}, function(tabs) {
+    tabs.forEach(tab => {
+      chrome.tabs.sendMessage(tab.id, { printRoadCertMsg: printRoadCertMsgToggle.checked });
+    });
+  });
+});
+
 // Tab switching logic
 const tabBtns = [
   { btn: document.getElementById('tab-firlist'), panel: document.getElementById('tabPanel-firlist') },
@@ -106,3 +138,20 @@ if (tabBtns.length > 0) {
   tabBtns[0].btn.classList.add('active');
   tabBtns[0].panel.style.display = 'block';
 }
+
+// --- Rod Bulk Search logic ---
+document.getElementById('startRodBulk').addEventListener('click', function() {
+  const input = document.getElementById('rodBulkNumbers').value;
+  const numbers = input.split(/\s+/).map(n => n.trim()).filter(n => n.length > 0);
+  const type = document.querySelector('input[name="rod_bulk_type_popup"]:checked').value;
+  if (numbers.length === 0) {
+    document.getElementById('rodBulkStatus').textContent = 'Please enter at least one number.';
+    return;
+  }
+  document.getElementById('rodBulkStatus').textContent = `Processing ${numbers.length} ${type === 'fir' ? 'FIR' : 'Rod'} number(s)...`;
+  // Send numbers and type to content script in the active tab
+  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    if (tabs.length === 0) return;
+    chrome.tabs.sendMessage(tabs[0].id, { rodBulkNumbers: numbers, rodBulkType: type, rodBulkStart: true });
+  });
+});
