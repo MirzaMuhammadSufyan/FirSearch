@@ -7,6 +7,7 @@ let cnicBulkSessionId = null;
 let editFirAutoClick = false;
 let autoClickMulzimanTab = false;
 let autoClickReportLink = false;
+let printRoadCertMsg = false;
 
 // --- Edit FIR auto-click logic ---
 function tryAutoClickEditFIR() {
@@ -58,18 +59,14 @@ function tryAutoClickReportLink() {
             reportLinks[0].dispatchEvent(evt);
           });
         } else {
-          // Multiple links: open all in new tabs sequentially to maintain order
-          // Click them one by one with delay to ensure proper sequencing
+          // Multiple links: open all in new tabs (ctrlKey=true)
           reportLinks.forEach((link, index) => {
             setTimeout(() => {
-              // Scroll each link into view before clicking
-              link.scrollIntoView({ behavior: 'smooth', block: 'center' });
-              setTimeout(() => {
-                // Create a MouseEvent with ctrlKey true to open in new tab
-                const evt = new MouseEvent('click', { bubbles: true, cancelable: true, view: window, ctrlKey: true });
+              ['mousedown', 'mouseup', 'click'].forEach(evtType => {
+                const evt = new MouseEvent(evtType, { bubbles: true, cancelable: true, view: window, ctrlKey: true });
                 link.dispatchEvent(evt);
-              }, 100);
-            }, index * 500); // Sequential delay: 500ms between each click to ensure proper order
+              });
+            }, index * 200); // Stagger the clicks slightly
           });
         }
       }, 200);
@@ -78,6 +75,11 @@ function tryAutoClickReportLink() {
       clearInterval(interval);
     }
   }, 300);
+}
+
+// --- Trigger print on road certificate report page ---
+function triggerPrint() {
+  window.print();
 }
 
 function showMulzimanBanner(message, success = true) {
@@ -185,15 +187,15 @@ function processNextFIR() {
   if (!firBulkData.sessionId || firBulkData.sessionId !== firBulkSessionId) return;
   let firNumbers = firBulkData.numbers || [];
   if (!Array.isArray(firNumbers) || firNumbers.length === 0) {
-    // Update status to show completion
-    const status = document.getElementById('fir-bulk-status-inline');
+    // Update status to show completion (for both register21 and FIRlist pages)
+    const status = document.getElementById('fir-bulk-status-inline') || document.getElementById('firlist-bulk-status-inline');
     if (status) {
       status.textContent = 'All FIRs processed!';
       status.style.color = '#5cb85c';
       status.style.background = '#e8f5e9';
     }
-    // Update button back to Bulk Search
-    const toggleBtn = document.getElementById('fir-bulk-toggle-btn');
+    // Update button back to Bulk Search (for both pages)
+    const toggleBtn = document.getElementById('fir-bulk-toggle-btn') || document.getElementById('firlist-bulk-toggle-btn');
     if (toggleBtn) {
       toggleBtn.textContent = '🚀 Bulk Search';
       toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
@@ -210,8 +212,8 @@ function processNextFIR() {
   firBulkData.totalCount = totalCount;
   localStorage.setItem('fir_bulk_data', JSON.stringify(firBulkData));
   
-  // Update status
-  const status = document.getElementById('fir-bulk-status-inline');
+  // Update status (for both register21 and FIRlist pages)
+  const status = document.getElementById('fir-bulk-status-inline') || document.getElementById('firlist-bulk-status-inline');
   if (status) {
     const remaining = firNumbers.length;
     status.textContent = `Processing... ${totalCount - remaining}/${totalCount} completed`;
@@ -257,15 +259,15 @@ function processNextFIR() {
   if (firNumbers.length > 0 && firBulkActive) {
     setTimeout(processNextFIR, 200);
   } else {
-    // Update status to show completion
-    const status = document.getElementById('fir-bulk-status-inline');
+    // Update status to show completion (for both register21 and FIRlist pages)
+    const status = document.getElementById('fir-bulk-status-inline') || document.getElementById('firlist-bulk-status-inline');
     if (status) {
       status.textContent = 'All FIRs processed!';
       status.style.color = '#5cb85c';
       status.style.background = '#e8f5e9';
     }
-    // Update button back to Bulk Search
-    const toggleBtn = document.getElementById('fir-bulk-toggle-btn');
+    // Update button back to Bulk Search (for both pages)
+    const toggleBtn = document.getElementById('fir-bulk-toggle-btn') || document.getElementById('firlist-bulk-toggle-btn');
     if (toggleBtn) {
       toggleBtn.textContent = '🚀 Bulk Search';
       toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
@@ -371,8 +373,8 @@ function startFirBulkSession(numbers, searchType = 'fir') {
 function stopFirBulkSession() {
   firBulkActive = false;
   localStorage.removeItem('fir_bulk_data');
-  // Update button state if widget exists
-  const toggleBtn = document.getElementById('fir-bulk-toggle-btn');
+  // Update button state if widget exists (for both register21 and FIRlist pages)
+  const toggleBtn = document.getElementById('fir-bulk-toggle-btn') || document.getElementById('firlist-bulk-toggle-btn');
   if (toggleBtn && toggleBtn.textContent.includes('Stop')) {
     toggleBtn.textContent = '🚀 Bulk Search';
     toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
@@ -618,6 +620,12 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
       setTimeout(tryAutoClickReportLink, 300);
     }
   }
+  if (typeof request.printRoadCertMsg === 'boolean') {
+    printRoadCertMsg = request.printRoadCertMsg;
+    if (printRoadCertMsg && window.location.href.includes('/register/roadcertificatereport/')) {
+      triggerPrint();
+    }
+  }
   // Handle all tab toggles
   [
     { key: 'autoClickTab2', id: 'tab-2', label: 'انسدادی کاروائی', state: 'tab2' },
@@ -662,13 +670,14 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
 
 // On load, get the toggle state for all tabs
 chrome.storage && chrome.storage.sync.get([
-  'editFirAutoClick', 'autoClickMulzimanTab', 'autoClickReportLink',
+  'editFirAutoClick', 'autoClickMulzimanTab', 'autoClickReportLink', 'printRoadCertMsg',
   'autoClickTab2', 'autoClickTab4', 'autoClickTab6', 'autoClickTab9', 'autoClickTab8', 'autoClickTab7',
   'autoClickTab15', 'autoClickTab3', 'autoClickTab10', 'autoClickTab17', 'autoClickTab12', 'autoClickTab13'
 ], function(result) {
   editFirAutoClick = !!result.editFirAutoClick;
   autoClickMulzimanTab = !!result.autoClickMulzimanTab;
   autoClickReportLink = !!result.autoClickReportLink;
+  printRoadCertMsg = !!result.printRoadCertMsg;
   tabToggles.tab2 = !!result.autoClickTab2;
   tabToggles.tab4 = !!result.autoClickTab4;
   tabToggles.tab6 = !!result.autoClickTab6;
@@ -686,6 +695,9 @@ chrome.storage && chrome.storage.sync.get([
   }
   if (autoClickReportLink && window.location.href.includes('/register/register21/0/search')) {
     setTimeout(tryAutoClickReportLink, 300);
+  }
+  if (printRoadCertMsg && window.location.href.includes('/register/roadcertificatereport/')) {
+    triggerPrint();
   }
   if (/\/firSystem\/editFIR\//.test(window.location.href)) {
     if (autoClickMulzimanTab) setTimeout(tryAutoClickMulzimanTab, 300);
@@ -708,9 +720,236 @@ chrome.storage && chrome.storage.sync.get([
   }
 });
 
-// On every page load, check if this tab is the active session
+// Function to inject FIR bulk widget on FIRlist page
+function injectFirListBulkWidget() {
+  if (!window.location.href.includes('firSystem/FIRlist')) return;
+  if (document.getElementById('firlist-bulk-widget')) return;
+
+  // Find the ibox-title div
+  const iboxTitle = document.querySelector('.ibox-title');
+  if (!iboxTitle) return;
+
+  // Find the h5 element inside ibox-title
+  const h5Element = iboxTitle.querySelector('h5');
+  if (!h5Element) return;
+
+  // Create widget container - inline with buttons
+  const widgetDiv = document.createElement('div');
+  widgetDiv.id = 'firlist-bulk-widget';
+  widgetDiv.style.display = 'inline-block';
+  widgetDiv.style.marginLeft = '15px';
+  widgetDiv.style.verticalAlign = 'middle';
+
+  // Create form group wrapper with horizontal layout
+  const formGroup = document.createElement('div');
+  formGroup.style.display = 'flex';
+  formGroup.style.alignItems = 'flex-end';
+  formGroup.style.gap = '10px';
+
+  // Beautiful textarea with fixed dimensions
+  const textarea = document.createElement('textarea');
+  textarea.id = 'firlist-bulk-input';
+  textarea.className = 'form-control';
+  textarea.placeholder = 'Paste FIR numbers here\nOne per line...';
+  textarea.style.width = '200px';
+  textarea.style.height = '100px';
+  textarea.style.resize = 'none';
+  textarea.style.fontSize = '13px';
+  textarea.style.padding = '10px';
+  textarea.style.border = '2px solid #e0e0e0';
+  textarea.style.borderRadius = '8px';
+  textarea.style.transition = 'all 0.3s ease';
+  textarea.style.fontFamily = 'inherit';
+  textarea.style.lineHeight = '1.5';
+  
+  // Interactive focus effects
+  textarea.addEventListener('focus', () => {
+    textarea.style.borderColor = '#5cb85c';
+    textarea.style.boxShadow = '0 0 0 3px rgba(92, 184, 92, 0.1)';
+    textarea.style.outline = 'none';
+  });
+  
+  textarea.addEventListener('blur', () => {
+    textarea.style.borderColor = '#e0e0e0';
+    textarea.style.boxShadow = 'none';
+  });
+  
+  formGroup.appendChild(textarea);
+
+  // Button container (vertical stack) - aligned to bottom
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.display = 'flex';
+  buttonContainer.style.flexDirection = 'column';
+  buttonContainer.style.gap = '8px';
+  buttonContainer.style.alignItems = 'stretch';
+  buttonContainer.style.justifyContent = 'flex-end';
+
+  // Interactive toggle button - starts as "Bulk Search"
+  const toggleBtn = document.createElement('button');
+  toggleBtn.type = 'button';
+  toggleBtn.id = 'firlist-bulk-toggle-btn';
+  toggleBtn.textContent = '🚀 Bulk Search';
+  toggleBtn.style.padding = '12px 20px';
+  toggleBtn.style.fontSize = '14px';
+  toggleBtn.style.fontWeight = '600';
+  toggleBtn.style.border = 'none';
+  toggleBtn.style.borderRadius = '8px';
+  toggleBtn.style.cursor = 'pointer';
+  toggleBtn.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+  toggleBtn.style.position = 'relative';
+  toggleBtn.style.overflow = 'hidden';
+  toggleBtn.style.minWidth = '140px';
+  toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+  toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
+  toggleBtn.style.color = '#fff';
+  toggleBtn.style.textTransform = 'uppercase';
+  toggleBtn.style.letterSpacing = '0.5px';
+  
+  // Add hover effect
+  toggleBtn.addEventListener('mouseenter', () => {
+    toggleBtn.style.transform = 'translateY(-2px)';
+    toggleBtn.style.boxShadow = '0 6px 16px rgba(92, 184, 92, 0.4)';
+  });
+  
+  toggleBtn.addEventListener('mouseleave', () => {
+    if (!firBulkActive) {
+      toggleBtn.style.transform = 'translateY(0)';
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+    }
+  });
+  
+  // Add active/pressed effect
+  toggleBtn.addEventListener('mousedown', () => {
+    toggleBtn.style.transform = 'translateY(0) scale(0.98)';
+  });
+  
+  toggleBtn.addEventListener('mouseup', () => {
+    if (!firBulkActive) {
+      toggleBtn.style.transform = 'translateY(-2px)';
+    }
+  });
+  
+  buttonContainer.appendChild(toggleBtn);
+
+  // Status indicator - compact and beautiful
+  const status = document.createElement('div');
+  status.id = 'firlist-bulk-status-inline';
+  status.style.fontSize = '11px';
+  status.style.color = '#666';
+  status.style.minHeight = '16px';
+  status.style.textAlign = 'center';
+  status.style.padding = '4px 8px';
+  status.style.borderRadius = '4px';
+  status.style.background = '#fff';
+  status.style.transition = 'all 0.3s ease';
+  buttonContainer.appendChild(status);
+
+  formGroup.appendChild(buttonContainer);
+  widgetDiv.appendChild(formGroup);
+
+  // Insert into h5 element after the existing buttons
+  h5Element.appendChild(widgetDiv);
+
+  // Function to update button state
+  const updateButtonState = (isActive) => {
+    if (isActive) {
+      toggleBtn.textContent = '⏹ Stop';
+      toggleBtn.style.background = 'linear-gradient(135deg, #d9534f 0%, #c9302c 100%)';
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(217, 83, 79, 0.3)';
+    } else {
+      toggleBtn.textContent = '🚀 Bulk Search';
+      toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+      toggleBtn.style.transform = 'translateY(0)';
+    }
+  };
+
+  // Event listener for toggle button
+  toggleBtn.addEventListener('click', () => {
+    if (firBulkActive) {
+      // Stop the bulk search
+      stopFirBulkSession();
+      status.textContent = 'Stopped.';
+      status.style.color = '#d9534f';
+      status.style.background = '#ffe6e6';
+      updateButtonState(false);
+    } else {
+      // Start the bulk search
+      const input = textarea.value;
+      const numbers = input.split(/\r?\n/).map(n => n.trim()).filter(n => n.length > 0);
+      if (numbers.length === 0) {
+        status.textContent = 'Please enter at least one FIR number.';
+        status.style.color = '#d9534f';
+        status.style.background = '#ffe6e6';
+        // Shake animation
+        toggleBtn.style.animation = 'shake 0.5s';
+        setTimeout(() => {
+          toggleBtn.style.animation = '';
+        }, 500);
+        return;
+      }
+      status.textContent = `Processing ${numbers.length} FIR(s)...`;
+      status.style.color = '#5cb85c';
+      status.style.background = '#e8f5e9';
+      updateButtonState(true);
+      startFirBulkSession(numbers, 'fir');
+    }
+  });
+
+  // Add shake animation CSS if not exists
+  if (!document.getElementById('cnic-bulk-animations')) {
+    const style = document.createElement('style');
+    style.id = 'cnic-bulk-animations';
+    style.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
+// Update processNextFIR to handle FIRlist status
+function updateFirListStatus() {
+  const status = document.getElementById('firlist-bulk-status-inline');
+  const toggleBtn = document.getElementById('firlist-bulk-toggle-btn');
+  if (status) {
+    const firBulkData = JSON.parse(localStorage.getItem('fir_bulk_data') || '{}');
+    const remaining = (firBulkData.numbers || []).length;
+    const totalCount = firBulkData.totalCount || remaining;
+    if (remaining > 0) {
+      status.textContent = `Processing... ${totalCount - remaining}/${totalCount} completed`;
+      status.style.color = '#5cb85c';
+      status.style.background = '#e8f5e9';
+    } else {
+      status.textContent = 'All FIRs processed!';
+      status.style.color = '#5cb85c';
+      status.style.background = '#e8f5e9';
+    }
+  }
+  if (toggleBtn && !firBulkActive) {
+    toggleBtn.textContent = '🚀 Bulk Search';
+    toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
+    toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+    toggleBtn.style.transform = 'translateY(0)';
+  }
+}
+
+// On every page load, inject widget and check if this tab is the active session
 if (window.location.href.includes('firSystem/FIRlist')) {
+  // Try injecting immediately and retry if form not found
+  const tryInject = () => {
+    injectFirListBulkWidget();
+    // If widget wasn't injected (form not found), retry after a short delay
+    if (!document.getElementById('firlist-bulk-widget')) {
+      setTimeout(tryInject, 300);
+    }
+  };
+  
   setTimeout(() => {
+    tryInject();
     let firBulkData = JSON.parse(localStorage.getItem('fir_bulk_data') || '{}');
     if (firBulkData.sessionId && firBulkData.numbers && firBulkData.numbers.length > 0) {
       if (!firBulkSessionId) firBulkSessionId = firBulkData.sessionId;

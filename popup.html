@@ -12,27 +12,11 @@
 <body>
   <div style="margin-top:16px;">
     <div id="popupTabs" style="display:flex;gap:8px;border-bottom:1px solid #ccc;margin-bottom:8px;">
-      <button id="tab-firlist" class="tab-btn active" style="flex:1;">Bulk FIR List Page</button>
-      <button id="tab-search" class="tab-btn" style="flex:1;">Search Record Page</button>
+      <button id="tab-search" class="tab-btn active" style="flex:1;">Search Record Page</button>
       <button id="tab-editfir" class="tab-btn" style="flex:1;">Edit FIR Page</button>
       <!-- Add more tab buttons here in the future -->
     </div>
-    <div id="tabPanel-firlist" class="tab-panel" style="display:block;">
-      <h3>Bulk FIR Search</h3>
-      <textarea id="firNumbers" placeholder="Enter FIR numbers separated by space or newline..."></textarea>
-      <button id="openAll">Open All</button>
-      <button id="stopAll" style="margin-top:8px;background:#d9534f;color:white;">Stop</button>
-      <div id="status" style="margin-top:10px;color:green;"></div>
-      <hr style="margin:18px 0;"/>
-      <h3>Rod Bulk Search</h3>
-      <div style="margin-bottom:8px;">
-        <label><input type="radio" name="rod_bulk_type_popup" value="fir" checked> Search by FIR Number</label>
-        <label style="margin-left:16px;"><input type="radio" name="rod_bulk_type_popup" value="rod"> Search by Rod Number</label>
-      </div>
-      <textarea id="rodBulkNumbers" placeholder="Enter FIR or Rod numbers separated by space or newline..."></textarea>
-      <button id="startRodBulk" style="margin-top:8px;">Start Rod Bulk Search</button>
-      <div id="rodBulkStatus" style="margin-top:10px;color:#d35400;"></div>
-      <hr style="margin:18px 0;"/>
+    <div id="tabPanel-search" class="tab-panel" style="display:block;">
       <label style="display:flex;align-items:center;gap:8px;">
         <input type="checkbox" id="autoClickReportLinkToggle" />
         Auto-click رپورٹ link on search page
@@ -41,19 +25,12 @@
         <input type="checkbox" id="printRoadCertMsgToggle" />
         Print message on road certificate report page
       </label>
-    </div>
-    <div id="tabPanel-search" class="tab-panel" style="display:none;">
+      <hr style="margin:16px 0;"/>
       <label style="display:flex;align-items:center;gap:8px;">
         <input type="checkbox" id="editFirToggle" />
         Auto-click Edit FIR on searchRecord page
       </label>
       <!-- Add more searchRecord toggles here if needed -->
-      <hr style="margin:16px 0;"/>
-      <h3>CNIC Bulk Search</h3>
-      <textarea id="cnicBulkNumbers" placeholder="Paste CNICs here, one per line..."></textarea>
-      <button id="startCnicBulk" style="margin-top:8px;">Bulk Search CNICs</button>
-      <button id="stopCnicBulk" style="margin-top:8px;background:#d9534f;color:white;">Stop</button>
-      <div id="cnicBulkStatus" style="margin-top:10px;color:#d35400;"></div>
     </div>
     <div id="tabPanel-editfir" class="tab-panel" style="display:none;">
       <label style="display:flex;align-items:center;gap:8px;">

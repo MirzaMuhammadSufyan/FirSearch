@@ -1,27 +1,3 @@
-document.getElementById('openAll').addEventListener('click', function() {
-  const input = document.getElementById('firNumbers').value;
-  const numbers = input.split(/\s+/).map(n => n.trim()).filter(n => n.length > 0);
-  if (numbers.length === 0) {
-    document.getElementById('status').textContent = 'Please enter at least one FIR number.';
-    return;
-  }
-  document.getElementById('status').textContent = `Processing ${numbers.length} FIR(s)...`;
-  // Send numbers to content script in the active tab
-  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-    if (tabs.length === 0) return;
-    chrome.tabs.sendMessage(tabs[0].id, { firNumbers: numbers, firBulkStart: true });
-  });
-});
-
-document.getElementById('stopAll').addEventListener('click', function() {
-  document.getElementById('status').textContent = 'Stopped.';
-  // Send stop message to content script in the active tab
-  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-    if (tabs.length === 0) return;
-    chrome.tabs.sendMessage(tabs[0].id, { firBulkStop: true });
-  });
-});
-
 // Edit FIR toggle logic
 const editFirToggle = document.getElementById('editFirToggle');
 // Restore toggle state
@@ -116,33 +92,8 @@ printRoadCertMsgToggle.addEventListener('change', function() {
   });
 });
 
-// --- CNIC Bulk Search logic ---
-document.getElementById('startCnicBulk').addEventListener('click', function() {
-  const input = document.getElementById('cnicBulkNumbers').value;
-  const numbers = input.split(/\r?\n/).map(n => n.trim()).filter(n => n.length > 0);
-  if (numbers.length === 0) {
-    document.getElementById('cnicBulkStatus').textContent = 'Please enter at least one CNIC.';
-    return;
-  }
-  document.getElementById('cnicBulkStatus').textContent = `Processing ${numbers.length} CNIC(s)...`;
-  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-    if (tabs.length === 0) return;
-    chrome.tabs.sendMessage(tabs[0].id, { cnicBulkNumbers: numbers, cnicBulkStart: true });
-  });
-});
-
-document.getElementById('stopCnicBulk').addEventListener('click', function() {
-  document.getElementById('cnicBulkStatus').textContent = 'Stopped.';
-  // Send stop message to content script in the active tab
-  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-    if (tabs.length === 0) return;
-    chrome.tabs.sendMessage(tabs[0].id, { cnicBulkStop: true });
-  });
-});
-
 // Tab switching logic
 const tabBtns = [
-  { btn: document.getElementById('tab-firlist'), panel: document.getElementById('tabPanel-firlist') },
   { btn: document.getElementById('tab-search'), panel: document.getElementById('tabPanel-search') },
   { btn: document.getElementById('tab-editfir'), panel: document.getElementById('tabPanel-editfir') }
   // Add more tabs here in the future
@@ -157,25 +108,9 @@ tabBtns.forEach(({ btn, panel }, idx) => {
     panel.style.display = 'block';
   });
 });
-// Default to first tab (Bulk FIR List Page)
+// Default to first tab (Search Record Page)
 if (tabBtns.length > 0) {
   tabBtns[0].btn.classList.add('active');
   tabBtns[0].panel.style.display = 'block';
 }
 
-// --- Rod Bulk Search logic ---
-document.getElementById('startRodBulk').addEventListener('click', function() {
-  const input = document.getElementById('rodBulkNumbers').value;
-  const numbers = input.split(/\s+/).map(n => n.trim()).filter(n => n.length > 0);
-  const type = document.querySelector('input[name="rod_bulk_type_popup"]:checked').value;
-  if (numbers.length === 0) {
-    document.getElementById('rodBulkStatus').textContent = 'Please enter at least one number.';
-    return;
-  }
-  document.getElementById('rodBulkStatus').textContent = `Processing ${numbers.length} ${type === 'fir' ? 'FIR' : 'Rod'} number(s)...`;
-  // Send numbers and type to content script in the active tab
-  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
-    if (tabs.length === 0) return;
-    chrome.tabs.sendMessage(tabs[0].id, { rodBulkNumbers: numbers, rodBulkType: type, rodBulkStart: true });
-  });
-});
