@@ -11,7 +11,8 @@
         "https://fir.punjabpolice.gov.pk/firSystem/editFIR*",
         "https://fir.punjabpolice.gov.pk/register/register21",
         "https://fir.punjabpolice.gov.pk/register/register21/0/search",
-        "https://fir.punjabpolice.gov.pk/register/roadcertificatereport/*"
+        "https://fir.punjabpolice.gov.pk/register/roadcertificatereport/*",
+        "https://fir.punjabpolice.gov.pk/search/searchPerson*"
       ],
       "js": ["content.js"]
     }
@@ -21,7 +22,8 @@
     "https://fir.punjabpolice.gov.pk/firSystem/FIRlist*",
     "https://fir.punjabpolice.gov.pk/register/register21",
     "https://fir.punjabpolice.gov.pk/register/register21/0/search",
-    "https://fir.punjabpolice.gov.pk/register/roadcertificatereport/*"
+    "https://fir.punjabpolice.gov.pk/register/roadcertificatereport/*",
+    "https://fir.punjabpolice.gov.pk/search/searchPerson*"
   ],
   "action": {
     "default_popup": "popup.html"

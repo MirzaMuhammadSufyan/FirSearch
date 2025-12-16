@@ -48,6 +48,12 @@
         Auto-click Edit FIR on searchRecord page
       </label>
       <!-- Add more searchRecord toggles here if needed -->
+      <hr style="margin:16px 0;"/>
+      <h3>CNIC Bulk Search</h3>
+      <textarea id="cnicBulkNumbers" placeholder="Paste CNICs here, one per line..."></textarea>
+      <button id="startCnicBulk" style="margin-top:8px;">Bulk Search CNICs</button>
+      <button id="stopCnicBulk" style="margin-top:8px;background:#d9534f;color:white;">Stop</button>
+      <div id="cnicBulkStatus" style="margin-top:10px;color:#d35400;"></div>
     </div>
     <div id="tabPanel-editfir" class="tab-panel" style="display:none;">
       <label style="display:flex;align-items:center;gap:8px;">

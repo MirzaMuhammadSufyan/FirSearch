@@ -2,10 +2,10 @@ console.log("FIR Bulk Search content script loaded");
 
 let firBulkActive = false;
 let firBulkSessionId = null;
+let cnicBulkActive = false;
+let cnicBulkSessionId = null;
 let editFirAutoClick = false;
 let autoClickMulzimanTab = false;
-let autoClickReportLink = false;
-let printRoadCertMsg = false;
 
 // --- Edit FIR auto-click logic ---
 function tryAutoClickEditFIR() {
@@ -163,32 +163,37 @@ function processNextFIR() {
   }
 }
 
-function tryAutoClickReportLink() {
-  if (!autoClickReportLink) return;
-  // Look for the رپوٹ link (exact title)
-  const reportLink = document.querySelector('a.text-navy[title="رپوٹ"]');
-  if (reportLink) {
-    reportLink.click();
-    console.log('[AutoClickReport] رپوٹ link auto-clicked!');
-  } else {
-    console.log('[AutoClickReport] رپوٹ link not found.');
+function processNextCNIC() {
+  if (!cnicBulkActive) return;
+  let cnicBulkData = JSON.parse(localStorage.getItem('cnic_bulk_data') || '{}');
+  if (!cnicBulkData.sessionId || cnicBulkData.sessionId !== cnicBulkSessionId) return;
+  let cnicNumbers = cnicBulkData.numbers || [];
+  if (!Array.isArray(cnicNumbers) || cnicNumbers.length === 0) {
+    localStorage.removeItem('cnic_bulk_data');
+    cnicBulkActive = false;
+    return;
   }
-}
-
-function tryPrintRoadCertMsg() {
-  if (!printRoadCertMsg) return;
-  if (window.location.pathname.startsWith('/register/roadcertificatereport/')) {
-    // Try to click the print button first
-    const printBtn = Array.from(document.querySelectorAll('a.btn.btn-primary')).find(
-      btn => btn.textContent.trim() === 'پرنٹ کریں'
-    );
-    if (printBtn) {
-      printBtn.click();
-      console.log('[RoadCertReport] پرنٹ کریں button auto-clicked!');
-    } else {
-      window.print();
-      console.log('[RoadCertReport] window.print() called as fallback.');
+  const cnic = cnicNumbers.shift();
+  cnicBulkData.numbers = cnicNumbers;
+  localStorage.setItem('cnic_bulk_data', JSON.stringify(cnicBulkData));
+  // Fill the keyword input (CNIC field)
+  const input = document.getElementById('keyword');
+  if (input) {
+    input.value = cnic;
+    // Find the submit button with name="AdvanceSearch" and value="تلاش کریں"
+    const searchBtn = document.querySelector('input[type="submit"][name="AdvanceSearch"]');
+    if (searchBtn && searchBtn.value.includes('تلاش')) {
+      // Create a MouseEvent with ctrlKey true to open in new tab
+      const evt = new MouseEvent('click', { bubbles: true, cancelable: true, view: window, ctrlKey: true });
+      searchBtn.dispatchEvent(evt);
     }
+  }
+  // If there are more CNICs, process next after 200ms (no reload)
+  if (cnicNumbers.length > 0 && cnicBulkActive) {
+    setTimeout(processNextCNIC, 200);
+  } else {
+    localStorage.removeItem('cnic_bulk_data');
+    cnicBulkActive = false;
   }
 }
 
@@ -203,18 +208,6 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     autoClickMulzimanTab = request.autoClickMulzimanTab;
     if (autoClickMulzimanTab && /\/firSystem\/editFIR\//.test(window.location.href)) {
       setTimeout(tryAutoClickMulzimanTab, 300);
-    }
-  }
-  if (typeof request.autoClickReportLink === 'boolean') {
-    autoClickReportLink = request.autoClickReportLink;
-    if (autoClickReportLink && window.location.pathname === '/register/register21/0/search') {
-      setTimeout(tryAutoClickReportLink, 300);
-    }
-  }
-  if (typeof request.printRoadCertMsg === 'boolean') {
-    printRoadCertMsg = request.printRoadCertMsg;
-    if (printRoadCertMsg && window.location.pathname.startsWith('/register/roadcertificatereport/')) {
-      tryPrintRoadCertMsg();
     }
   }
   // Handle all tab toggles
@@ -250,76 +243,27 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     localStorage.setItem('fir_bulk_data', JSON.stringify({ sessionId: firBulkSessionId, numbers: request.firNumbers }));
     processNextFIR();
   }
-  if (request.rodBulkStart && request.rodBulkNumbers && Array.isArray(request.rodBulkNumbers)) {
-    console.log('[RodBulk] Received rodBulkStart message:', request);
-    let rodBulkType = request.rodBulkType === 'rod' ? 'rod' : 'fir';
-    let rodBulkNumbers = request.rodBulkNumbers.slice();
-    let rodBulkActive = true;
-    function processNextRodBulkPopup() {
-      if (!rodBulkActive || rodBulkNumbers.length === 0) {
-        console.log('[RodBulk] Done or stopped.');
-        rodBulkActive = false;
-        return;
-      }
-      const num = rodBulkNumbers.shift();
-      console.log(`[RodBulk] Processing number: ${num}`);
-      // Find the main form
-      const form = document.getElementById('searchForm');
-      if (!form) {
-        console.error('[RodBulk] searchForm not found!');
-        rodBulkActive = false;
-        return;
-      }
-      // Clone all form data
-      const formData = new FormData(form);
-      // Set the correct number
-      if (rodBulkType === 'fir') {
-        formData.set('fir_id', num);
-        formData.set('r21_challan_no', '');
-      } else {
-        formData.set('fir_id', '');
-        formData.set('r21_challan_no', num);
-      }
-      // Create a temporary form for POSTing to a new tab
-      const tempForm = document.createElement('form');
-      tempForm.action = form.action;
-      tempForm.method = form.method;
-      tempForm.target = '_blank';
-      // Copy all fields
-      for (const [key, value] of formData.entries()) {
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = key;
-        input.value = value;
-        tempForm.appendChild(input);
-      }
-      document.body.appendChild(tempForm);
-      console.log('[RodBulk] Submitting form for number:', num);
-      tempForm.submit();
-      document.body.removeChild(tempForm);
-      // Next after 400ms
-      if (rodBulkNumbers.length > 0 && rodBulkActive) {
-        setTimeout(processNextRodBulkPopup, 400);
-      } else {
-        console.log('[RodBulk] Finished all numbers.');
-        rodBulkActive = false;
-      }
-    }
-    processNextRodBulkPopup();
+  if (request.cnicBulkStop) {
+    cnicBulkActive = false;
+    localStorage.removeItem('cnic_bulk_data');
+    return;
+  }
+  if (request.cnicBulkStart && request.cnicBulkNumbers && Array.isArray(request.cnicBulkNumbers)) {
+    cnicBulkSessionId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+    cnicBulkActive = true;
+    localStorage.setItem('cnic_bulk_data', JSON.stringify({ sessionId: cnicBulkSessionId, numbers: request.cnicBulkNumbers }));
+    processNextCNIC();
   }
 });
 
 // On load, get the toggle state for all tabs
 chrome.storage && chrome.storage.sync.get([
-  'editFirAutoClick', 'autoClickMulzimanTab', 'autoClickReportLink',
+  'editFirAutoClick', 'autoClickMulzimanTab',
   'autoClickTab2', 'autoClickTab4', 'autoClickTab6', 'autoClickTab9', 'autoClickTab8', 'autoClickTab7',
-  'autoClickTab15', 'autoClickTab3', 'autoClickTab10', 'autoClickTab17', 'autoClickTab12', 'autoClickTab13',
-  'printRoadCertMsg'
+  'autoClickTab15', 'autoClickTab3', 'autoClickTab10', 'autoClickTab17', 'autoClickTab12', 'autoClickTab13'
 ], function(result) {
   editFirAutoClick = !!result.editFirAutoClick;
   autoClickMulzimanTab = !!result.autoClickMulzimanTab;
-  autoClickReportLink = !!result.autoClickReportLink;
-  printRoadCertMsg = !!result.printRoadCertMsg;
   tabToggles.tab2 = !!result.autoClickTab2;
   tabToggles.tab4 = !!result.autoClickTab4;
   tabToggles.tab6 = !!result.autoClickTab6;
@@ -354,12 +298,6 @@ chrome.storage && chrome.storage.sync.get([
       if (tabToggles[state]) setTimeout(() => tryAutoClickTab(id, label, true), 300);
     });
   }
-  if (autoClickReportLink && window.location.pathname === '/register/register21/0/search') {
-    setTimeout(tryAutoClickReportLink, 300);
-  }
-  if (printRoadCertMsg && window.location.pathname.startsWith('/register/roadcertificatereport/')) {
-    tryPrintRoadCertMsg();
-  }
 });
 
 // On every page load, check if this tab is the active session
@@ -374,125 +312,26 @@ if (window.location.href.includes('firSystem/FIRlist')) {
   }, 500);
 }
 
+// On searchPerson page load, check if this tab is the active CNIC bulk session
+if (window.location.href.includes('/search/searchPerson')) {
+  setTimeout(() => {
+    let cnicBulkData = JSON.parse(localStorage.getItem('cnic_bulk_data') || '{}');
+    if (cnicBulkData.sessionId && cnicBulkData.numbers && cnicBulkData.numbers.length > 0) {
+      if (!cnicBulkSessionId) cnicBulkSessionId = cnicBulkData.sessionId;
+      cnicBulkActive = true;
+      processNextCNIC();
+    }
+  }, 500);
+}
+
 window.addEventListener('beforeunload', function() {
   // If the tab is closed, clear the session if this was the active tab
   let firBulkData = JSON.parse(localStorage.getItem('fir_bulk_data') || '{}');
   if (firBulkData.sessionId && firBulkData.sessionId === firBulkSessionId) {
     localStorage.removeItem('fir_bulk_data');
   }
+  let cnicBulkData = JSON.parse(localStorage.getItem('cnic_bulk_data') || '{}');
+  if (cnicBulkData.sessionId && cnicBulkData.sessionId === cnicBulkSessionId) {
+    localStorage.removeItem('cnic_bulk_data');
+  }
 });
-
-// --- Rod Bulk Search UI and Logic ---
-(function() {
-  const ROD_BULK_URL = 'https://fir.punjabpolice.gov.pk/register/register21';
-  if (window.location.href.split('?')[0] !== ROD_BULK_URL) return;
-
-  function injectRodBulkSection() {
-    console.log('[Rod Bulk Search] Injecting section...');
-    const container = document.createElement('div');
-    container.style.background = '#fffbe7';
-    container.style.border = '2px solid #f0ad4e';
-    container.style.padding = '18px';
-    container.style.margin = '18px 0';
-    container.style.borderRadius = '10px';
-    container.style.maxWidth = '700px';
-    container.style.fontSize = '16px';
-    container.style.boxShadow = '0 2px 8px rgba(240,173,78,0.08)';
-
-    container.innerHTML = `
-      <div style="font-weight:bold;font-size:22px;margin-bottom:10px;color:#d35400;">Rod Bulk Search</div>
-      <div style="margin-bottom:10px;color:#555;">Paste FIR or Rod numbers (one per line), select the search type, and click <b>Start Bulk Search</b>. The extension will fill and search each number for you.</div>
-      <div style="margin-bottom:10px;">
-        <label><input type="radio" name="rod_bulk_type" value="fir" checked> Search by FIR Number</label>
-        <label style="margin-left:24px;"><input type="radio" name="rod_bulk_type" value="rod"> Search by Rod Number</label>
-      </div>
-      <textarea id="rod_bulk_numbers" rows="5" style="width:100%;font-size:16px;border:1px solid #ccc;border-radius:4px;padding:8px;" placeholder="Paste FIR or Rod numbers, one per line..."></textarea>
-      <br/>
-      <button id="rod_bulk_start" style="margin-top:12px;padding:8px 24px;font-size:17px;background:#f0ad4e;color:#fff;border:none;border-radius:4px;cursor:pointer;">Start Bulk Search</button>
-      <span id="rod_bulk_status" style="margin-left:18px;color:#007bff;font-weight:bold;"></span>
-    `;
-
-    // Insert directly above the main search form
-    const searchForm = document.getElementById('searchForm');
-    if (searchForm && searchForm.parentNode) {
-      searchForm.parentNode.insertBefore(container, searchForm);
-    } else {
-      document.body.insertBefore(container, document.body.firstChild);
-    }
-
-    // Bulk search logic
-    let rodBulkActive = false;
-    let rodBulkNumbers = [];
-    let rodBulkType = 'fir';
-
-    function setRodBulkStatus(msg) {
-      document.getElementById('rod_bulk_status').textContent = msg;
-    }
-
-    function processNextRodBulk() {
-      if (!rodBulkActive || rodBulkNumbers.length === 0) {
-        setRodBulkStatus('Bulk search finished.');
-        rodBulkActive = false;
-        return;
-      }
-      const num = rodBulkNumbers.shift();
-      setRodBulkStatus(`Searching: ${num} (${rodBulkNumbers.length} left)`);
-      if (rodBulkType === 'fir') {
-        const firInput = document.getElementById('fir_id');
-        if (firInput) firInput.value = num;
-        const rodInput = document.getElementById('r21_challan_no');
-        if (rodInput) rodInput.value = '';
-      } else {
-        const firInput = document.getElementById('fir_id');
-        if (firInput) firInput.value = '';
-        const rodInput = document.getElementById('r21_challan_no');
-        if (rodInput) rodInput.value = num;
-      }
-      // Find the search button
-      const buttons = document.querySelectorAll('input[type="submit"]');
-      let searchBtn = null;
-      buttons.forEach(btn => {
-        if (btn.value && btn.value.includes('تلاش')) searchBtn = btn;
-      });
-      if (searchBtn) {
-        const evt = new MouseEvent('click', { bubbles: true, cancelable: true, view: window, ctrlKey: true });
-        searchBtn.dispatchEvent(evt);
-      }
-      // Next after 300ms
-      if (rodBulkNumbers.length > 0 && rodBulkActive) {
-        setTimeout(processNextRodBulk, 300);
-      } else {
-        setRodBulkStatus('Bulk search finished.');
-        rodBulkActive = false;
-      }
-    }
-
-    // Radio change
-    container.querySelectorAll('input[name="rod_bulk_type"]').forEach(radio => {
-      radio.addEventListener('change', function() {
-        rodBulkType = this.value;
-      });
-    });
-
-    // Start button
-    document.getElementById('rod_bulk_start').addEventListener('click', function() {
-      if (rodBulkActive) return;
-      const raw = document.getElementById('rod_bulk_numbers').value;
-      const nums = raw.split(/\r?\n/).map(x => x.trim()).filter(x => x);
-      if (nums.length === 0) {
-        setRodBulkStatus('Please enter at least one number.');
-        return;
-      }
-      rodBulkNumbers = nums;
-      rodBulkActive = true;
-      setRodBulkStatus('Starting bulk search...');
-      processNextRodBulk();
-    });
-  }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', injectRodBulkSection);
-  } else {
-    injectRodBulkSection();
-  }
-})();

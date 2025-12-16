@@ -116,6 +116,30 @@ printRoadCertMsgToggle.addEventListener('change', function() {
   });
 });
 
+// --- CNIC Bulk Search logic ---
+document.getElementById('startCnicBulk').addEventListener('click', function() {
+  const input = document.getElementById('cnicBulkNumbers').value;
+  const numbers = input.split(/\r?\n/).map(n => n.trim()).filter(n => n.length > 0);
+  if (numbers.length === 0) {
+    document.getElementById('cnicBulkStatus').textContent = 'Please enter at least one CNIC.';
+    return;
+  }
+  document.getElementById('cnicBulkStatus').textContent = `Processing ${numbers.length} CNIC(s)...`;
+  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    if (tabs.length === 0) return;
+    chrome.tabs.sendMessage(tabs[0].id, { cnicBulkNumbers: numbers, cnicBulkStart: true });
+  });
+});
+
+document.getElementById('stopCnicBulk').addEventListener('click', function() {
+  document.getElementById('cnicBulkStatus').textContent = 'Stopped.';
+  // Send stop message to content script in the active tab
+  chrome.tabs.query({ active: true, currentWindow: true }, function(tabs) {
+    if (tabs.length === 0) return;
+    chrome.tabs.sendMessage(tabs[0].id, { cnicBulkStop: true });
+  });
+});
+
 // Tab switching logic
 const tabBtns = [
   { btn: document.getElementById('tab-firlist'), panel: document.getElementById('tabPanel-firlist') },
