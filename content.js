@@ -6,6 +6,7 @@ let cnicBulkActive = false;
 let cnicBulkSessionId = null;
 let editFirAutoClick = false;
 let autoClickMulzimanTab = false;
+let autoClickReportLink = false;
 
 // --- Edit FIR auto-click logic ---
 function tryAutoClickEditFIR() {
@@ -19,6 +20,59 @@ function tryAutoClickEditFIR() {
       editLink.dispatchEvent(new MouseEvent('mousedown', { bubbles: true, cancelable: true, view: window }));
       editLink.dispatchEvent(new MouseEvent('mouseup', { bubbles: true, cancelable: true, view: window }));
       editLink.click();
+      clearInterval(interval);
+    } else if (++attempts >= maxAttempts) {
+      clearInterval(interval);
+    }
+  }, 300);
+}
+
+// --- Auto-click رپورٹ link logic ---
+function tryAutoClickReportLink() {
+  if (!autoClickReportLink) return;
+  let attempts = 0;
+  const maxAttempts = 20;
+  const interval = setInterval(() => {
+    // Find all رپورٹ links - specifically looking for road certificate report links
+    // Pattern: <a class="text-navy" title="رپوٹ" href="...roadcertificatereport...">
+    const allLinks = Array.from(document.querySelectorAll('a'));
+    const reportLinks = allLinks.filter(link => {
+      // Check for the specific pattern: class="text-navy" and title="رپوٹ" and href contains "roadcertificatereport"
+      const hasCorrectClass = link.classList.contains('text-navy');
+      const title = link.getAttribute('title');
+      const hasCorrectTitle = title === 'رپوٹ' || title === 'رپورٹ';
+      const hasCorrectHref = link.href && link.href.includes('roadcertificatereport');
+      
+      return hasCorrectClass && hasCorrectTitle && hasCorrectHref && isElementVisible(link);
+    });
+
+    if (reportLinks.length > 0) {
+      // Scroll first into view for visual context
+      reportLinks[0].scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      setTimeout(() => {
+        if (reportLinks.length === 1) {
+          // Single link: open in same tab (no ctrl/meta)
+          ['mousedown', 'mouseup', 'click'].forEach(evtType => {
+            const evt = new MouseEvent(evtType, { bubbles: true, cancelable: true, view: window });
+            reportLinks[0].dispatchEvent(evt);
+          });
+        } else {
+          // Multiple links: open all in new tabs sequentially to maintain order
+          // Click them one by one with delay to ensure proper sequencing
+          reportLinks.forEach((link, index) => {
+            setTimeout(() => {
+              // Scroll each link into view before clicking
+              link.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              setTimeout(() => {
+                // Create a MouseEvent with ctrlKey true to open in new tab
+                const evt = new MouseEvent('click', { bubbles: true, cancelable: true, view: window, ctrlKey: true });
+                link.dispatchEvent(evt);
+              }, 100);
+            }, index * 500); // Sequential delay: 500ms between each click to ensure proper order
+          });
+        }
+      }, 200);
       clearInterval(interval);
     } else if (++attempts >= maxAttempts) {
       clearInterval(interval);
@@ -131,33 +185,93 @@ function processNextFIR() {
   if (!firBulkData.sessionId || firBulkData.sessionId !== firBulkSessionId) return;
   let firNumbers = firBulkData.numbers || [];
   if (!Array.isArray(firNumbers) || firNumbers.length === 0) {
+    // Update status to show completion
+    const status = document.getElementById('fir-bulk-status-inline');
+    if (status) {
+      status.textContent = 'All FIRs processed!';
+      status.style.color = '#5cb85c';
+      status.style.background = '#e8f5e9';
+    }
+    // Update button back to Bulk Search
+    const toggleBtn = document.getElementById('fir-bulk-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.textContent = '🚀 Bulk Search';
+      toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+      toggleBtn.style.transform = 'translateY(0)';
+    }
     localStorage.removeItem('fir_bulk_data');
     firBulkActive = false;
     return;
   }
   const num = firNumbers.shift();
+  const totalCount = firBulkData.totalCount || firNumbers.length + 1;
   firBulkData.numbers = firNumbers;
+  firBulkData.totalCount = totalCount;
   localStorage.setItem('fir_bulk_data', JSON.stringify(firBulkData));
-  // Fill the FIR input
-  const input = document.getElementById('fir_id');
-  if (input) {
-    input.value = num;
-    // Find the 'تلاش کریں' button
-    const buttons = document.querySelectorAll('input[type="submit"]');
-    let searchBtn = null;
-    buttons.forEach(btn => {
-      if (btn.value.includes('تلاش')) searchBtn = btn;
-    });
-    if (searchBtn) {
-      // Create a MouseEvent with ctrlKey true
-      const evt = new MouseEvent('click', { bubbles: true, cancelable: true, view: window, ctrlKey: true });
-      searchBtn.dispatchEvent(evt);
+  
+  // Update status
+  const status = document.getElementById('fir-bulk-status-inline');
+  if (status) {
+    const remaining = firNumbers.length;
+    status.textContent = `Processing... ${totalCount - remaining}/${totalCount} completed`;
+    status.style.color = '#5cb85c';
+    status.style.background = '#e8f5e9';
+  }
+  
+  // Fill the appropriate input based on search type
+  const searchType = firBulkData.searchType || 'fir';
+  const firInput = document.getElementById('fir_id');
+  const rodInput = document.getElementById('r21_challan_no');
+  
+  if (searchType === 'rod') {
+    // Use Rod input field and clear FIR input
+    if (rodInput) {
+      rodInput.value = num;
+      if (firInput) {
+        firInput.value = '';
+      }
     }
+  } else {
+    // Use FIR input field and clear Rod input
+    if (firInput) {
+      firInput.value = num;
+      if (rodInput) {
+        rodInput.value = '';
+      }
+    }
+  }
+  
+  // Find the 'تلاش کریں' button
+  const buttons = document.querySelectorAll('input[type="submit"]');
+  let searchBtn = null;
+  buttons.forEach(btn => {
+    if (btn.value.includes('تلاش')) searchBtn = btn;
+  });
+  if (searchBtn) {
+    // Create a MouseEvent with ctrlKey true
+    const evt = new MouseEvent('click', { bubbles: true, cancelable: true, view: window, ctrlKey: true });
+    searchBtn.dispatchEvent(evt);
   }
   // If there are more FIRs, process next after 200ms (no reload)
   if (firNumbers.length > 0 && firBulkActive) {
     setTimeout(processNextFIR, 200);
   } else {
+    // Update status to show completion
+    const status = document.getElementById('fir-bulk-status-inline');
+    if (status) {
+      status.textContent = 'All FIRs processed!';
+      status.style.color = '#5cb85c';
+      status.style.background = '#e8f5e9';
+    }
+    // Update button back to Bulk Search
+    const toggleBtn = document.getElementById('fir-bulk-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.textContent = '🚀 Bulk Search';
+      toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+      toggleBtn.style.transform = 'translateY(0)';
+    }
     localStorage.removeItem('fir_bulk_data');
     firBulkActive = false;
   }
@@ -169,13 +283,31 @@ function processNextCNIC() {
   if (!cnicBulkData.sessionId || cnicBulkData.sessionId !== cnicBulkSessionId) return;
   let cnicNumbers = cnicBulkData.numbers || [];
   if (!Array.isArray(cnicNumbers) || cnicNumbers.length === 0) {
+    // Update status to show completion
+    const status = document.getElementById('cnic-bulk-status-inline');
+    if (status) {
+      status.textContent = 'All CNICs processed!';
+      status.style.color = '#5cb85c';
+    }
     localStorage.removeItem('cnic_bulk_data');
     cnicBulkActive = false;
     return;
   }
   const cnic = cnicNumbers.shift();
+  const totalCount = cnicBulkData.totalCount || cnicNumbers.length + 1;
   cnicBulkData.numbers = cnicNumbers;
+  cnicBulkData.totalCount = totalCount;
   localStorage.setItem('cnic_bulk_data', JSON.stringify(cnicBulkData));
+  
+  // Update status
+  const status = document.getElementById('cnic-bulk-status-inline');
+  if (status) {
+    const remaining = cnicNumbers.length;
+    status.textContent = `Processing... ${totalCount - remaining}/${totalCount} completed`;
+    status.style.color = '#5cb85c';
+    status.style.background = '#e8f5e9';
+  }
+  
   // Fill the keyword input (CNIC field)
   const input = document.getElementById('keyword');
   if (input) {
@@ -192,9 +324,279 @@ function processNextCNIC() {
   if (cnicNumbers.length > 0 && cnicBulkActive) {
     setTimeout(processNextCNIC, 200);
   } else {
+    // Update status to show completion
+    if (status) {
+      status.textContent = 'All CNICs processed!';
+      status.style.color = '#5cb85c';
+      status.style.background = '#e8f5e9';
+    }
+    // Update button back to Bulk Search
+    const toggleBtn = document.getElementById('cnic-bulk-toggle-btn');
+    if (toggleBtn) {
+      toggleBtn.textContent = '🚀 Bulk Search';
+      toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+      toggleBtn.style.transform = 'translateY(0)';
+    }
     localStorage.removeItem('cnic_bulk_data');
     cnicBulkActive = false;
   }
+}
+
+function startCnicBulkSession(numbers) {
+  if (!numbers || !Array.isArray(numbers) || numbers.length === 0) return;
+  cnicBulkSessionId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+  cnicBulkActive = true;
+  localStorage.setItem('cnic_bulk_data', JSON.stringify({ 
+    sessionId: cnicBulkSessionId, 
+    numbers,
+    totalCount: numbers.length 
+  }));
+  processNextCNIC();
+}
+
+function startFirBulkSession(numbers, searchType = 'fir') {
+  if (!numbers || !Array.isArray(numbers) || numbers.length === 0) return;
+  firBulkSessionId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
+  firBulkActive = true;
+  localStorage.setItem('fir_bulk_data', JSON.stringify({ 
+    sessionId: firBulkSessionId, 
+    numbers,
+    totalCount: numbers.length,
+    searchType: searchType || 'fir'
+  }));
+  processNextFIR();
+}
+
+function stopFirBulkSession() {
+  firBulkActive = false;
+  localStorage.removeItem('fir_bulk_data');
+  // Update button state if widget exists
+  const toggleBtn = document.getElementById('fir-bulk-toggle-btn');
+  if (toggleBtn && toggleBtn.textContent.includes('Stop')) {
+    toggleBtn.textContent = '🚀 Bulk Search';
+    toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
+    toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+    toggleBtn.style.transform = 'translateY(0)';
+  }
+}
+
+function stopCnicBulkSession() {
+  cnicBulkActive = false;
+  localStorage.removeItem('cnic_bulk_data');
+  // Update button state if widget exists
+  const toggleBtn = document.getElementById('cnic-bulk-toggle-btn');
+  if (toggleBtn && toggleBtn.textContent.includes('Stop')) {
+    toggleBtn.textContent = '🚀 Bulk Search';
+    toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
+    toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+    toggleBtn.style.transform = 'translateY(0)';
+  }
+}
+
+function injectCnicBulkWidget() {
+  if (!window.location.href.includes('/search/searchPerson')) return;
+  if (document.getElementById('cnic-bulk-widget')) return;
+
+  // Find the form and its row
+  const form = document.getElementById('searchForm');
+  if (!form) return;
+  
+  const formRow = form.querySelector('.row[align="center"]');
+  if (!formRow) return;
+
+  // Create column container matching form structure
+  const colDiv = document.createElement('div');
+  colDiv.className = 'col-lg-3';
+  colDiv.id = 'cnic-bulk-widget';
+
+  // Create form group wrapper with horizontal layout
+  const formGroup = document.createElement('div');
+  formGroup.className = 'form-group';
+  formGroup.style.display = 'flex';
+  formGroup.style.alignItems = 'flex-end';
+  formGroup.style.gap = '10px';
+
+  // Beautiful textarea with fixed dimensions
+  const textarea = document.createElement('textarea');
+  textarea.id = 'cnic-bulk-input';
+  textarea.className = 'form-control';
+  textarea.placeholder = 'Paste CNICs here\nOne per line...';
+  textarea.style.width = '200px';
+  textarea.style.height = '100px';
+  textarea.style.resize = 'none';
+  textarea.style.fontSize = '13px';
+  textarea.style.padding = '10px';
+  textarea.style.border = '2px solid #e0e0e0';
+  textarea.style.borderRadius = '8px';
+  textarea.style.transition = 'all 0.3s ease';
+  textarea.style.fontFamily = 'inherit';
+  textarea.style.lineHeight = '1.5';
+  
+  // Interactive focus effects
+  textarea.addEventListener('focus', () => {
+    textarea.style.borderColor = '#5cb85c';
+    textarea.style.boxShadow = '0 0 0 3px rgba(92, 184, 92, 0.1)';
+    textarea.style.outline = 'none';
+  });
+  
+  textarea.addEventListener('blur', () => {
+    textarea.style.borderColor = '#e0e0e0';
+    textarea.style.boxShadow = 'none';
+  });
+  
+  formGroup.appendChild(textarea);
+
+  // Button container (vertical stack) - aligned to bottom
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.display = 'flex';
+  buttonContainer.style.flexDirection = 'column';
+  buttonContainer.style.gap = '8px';
+  buttonContainer.style.alignItems = 'stretch';
+  buttonContainer.style.justifyContent = 'flex-end';
+
+  // Interactive toggle button - starts as "Bulk Search"
+  const toggleBtn = document.createElement('button');
+  toggleBtn.type = 'button';
+  toggleBtn.id = 'cnic-bulk-toggle-btn';
+  toggleBtn.textContent = '🚀 Bulk Search';
+  toggleBtn.style.padding = '12px 20px';
+  toggleBtn.style.fontSize = '14px';
+  toggleBtn.style.fontWeight = '600';
+  toggleBtn.style.border = 'none';
+  toggleBtn.style.borderRadius = '8px';
+  toggleBtn.style.cursor = 'pointer';
+  toggleBtn.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+  toggleBtn.style.position = 'relative';
+  toggleBtn.style.overflow = 'hidden';
+  toggleBtn.style.minWidth = '140px';
+  toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+  toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
+  toggleBtn.style.color = '#fff';
+  toggleBtn.style.textTransform = 'uppercase';
+  toggleBtn.style.letterSpacing = '0.5px';
+  
+  // Add hover effect
+  toggleBtn.addEventListener('mouseenter', () => {
+    toggleBtn.style.transform = 'translateY(-2px)';
+    toggleBtn.style.boxShadow = '0 6px 16px rgba(92, 184, 92, 0.4)';
+  });
+  
+  toggleBtn.addEventListener('mouseleave', () => {
+    if (!cnicBulkActive) {
+      toggleBtn.style.transform = 'translateY(0)';
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+    }
+  });
+  
+  // Add active/pressed effect
+  toggleBtn.addEventListener('mousedown', () => {
+    toggleBtn.style.transform = 'translateY(0) scale(0.98)';
+  });
+  
+  toggleBtn.addEventListener('mouseup', () => {
+    if (!cnicBulkActive) {
+      toggleBtn.style.transform = 'translateY(-2px)';
+    }
+  });
+  
+  buttonContainer.appendChild(toggleBtn);
+
+  // Status indicator - compact and beautiful
+  const status = document.createElement('div');
+  status.id = 'cnic-bulk-status-inline';
+  status.style.fontSize = '11px';
+  status.style.color = '#666';
+  status.style.minHeight = '16px';
+  status.style.textAlign = 'center';
+  status.style.padding = '4px 8px';
+  status.style.borderRadius = '4px';
+  status.style.background = '#f8f9fa';
+  status.style.transition = 'all 0.3s ease';
+  buttonContainer.appendChild(status);
+
+  formGroup.appendChild(buttonContainer);
+  colDiv.appendChild(formGroup);
+
+  // Insert into form row (before the submit button column)
+  const submitCol = formRow.querySelector('.col-lg-1');
+  if (submitCol) {
+    formRow.insertBefore(colDiv, submitCol);
+  } else {
+    formRow.appendChild(colDiv);
+  }
+
+  // Function to update button state
+  const updateButtonState = (isActive) => {
+    if (isActive) {
+      toggleBtn.textContent = '⏹ Stop';
+      toggleBtn.style.background = 'linear-gradient(135deg, #d9534f 0%, #c9302c 100%)';
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(217, 83, 79, 0.3)';
+      toggleBtn.addEventListener('mouseenter', function hoverActive() {
+        toggleBtn.style.transform = 'translateY(-2px)';
+        toggleBtn.style.boxShadow = '0 6px 16px rgba(217, 83, 79, 0.4)';
+      });
+    } else {
+      toggleBtn.textContent = '🚀 Bulk Search';
+      toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+      toggleBtn.style.transform = 'translateY(0)';
+    }
+  };
+
+  // Event listener for toggle button
+  toggleBtn.addEventListener('click', () => {
+    if (cnicBulkActive) {
+      // Stop the bulk search
+      stopCnicBulkSession();
+      status.textContent = 'Stopped.';
+      status.style.color = '#d9534f';
+      status.style.background = '#ffe6e6';
+      updateButtonState(false);
+    } else {
+      // Start the bulk search
+      const input = textarea.value;
+      const numbers = input.split(/\r?\n/).map(n => n.trim()).filter(n => n.length > 0);
+      if (numbers.length === 0) {
+        status.textContent = 'Please enter at least one CNIC.';
+        status.style.color = '#d9534f';
+        status.style.background = '#ffe6e6';
+        // Shake animation
+        toggleBtn.style.animation = 'shake 0.5s';
+        setTimeout(() => {
+          toggleBtn.style.animation = '';
+        }, 500);
+        return;
+      }
+      status.textContent = `Processing ${numbers.length} CNIC(s)...`;
+      status.style.color = '#5cb85c';
+      status.style.background = '#e8f5e9';
+      updateButtonState(true);
+      startCnicBulkSession(numbers);
+    }
+  });
+
+  // Add shake animation CSS
+  if (!document.getElementById('cnic-bulk-animations')) {
+    const style = document.createElement('style');
+    style.id = 'cnic-bulk-animations';
+    style.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Monitor bulk state changes to update button
+  const checkBulkState = setInterval(() => {
+    if (!cnicBulkActive && toggleBtn.textContent.includes('Stop')) {
+      updateButtonState(false);
+      clearInterval(checkBulkState);
+    }
+  }, 100);
 }
 
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
@@ -208,6 +610,12 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     autoClickMulzimanTab = request.autoClickMulzimanTab;
     if (autoClickMulzimanTab && /\/firSystem\/editFIR\//.test(window.location.href)) {
       setTimeout(tryAutoClickMulzimanTab, 300);
+    }
+  }
+  if (typeof request.autoClickReportLink === 'boolean') {
+    autoClickReportLink = request.autoClickReportLink;
+    if (autoClickReportLink && window.location.href.includes('/register/register21/0/search')) {
+      setTimeout(tryAutoClickReportLink, 300);
     }
   }
   // Handle all tab toggles
@@ -244,26 +652,23 @@ chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
     processNextFIR();
   }
   if (request.cnicBulkStop) {
-    cnicBulkActive = false;
-    localStorage.removeItem('cnic_bulk_data');
+    stopCnicBulkSession();
     return;
   }
   if (request.cnicBulkStart && request.cnicBulkNumbers && Array.isArray(request.cnicBulkNumbers)) {
-    cnicBulkSessionId = Date.now().toString() + Math.random().toString(36).substr(2, 9);
-    cnicBulkActive = true;
-    localStorage.setItem('cnic_bulk_data', JSON.stringify({ sessionId: cnicBulkSessionId, numbers: request.cnicBulkNumbers }));
-    processNextCNIC();
+    startCnicBulkSession(request.cnicBulkNumbers);
   }
 });
 
 // On load, get the toggle state for all tabs
 chrome.storage && chrome.storage.sync.get([
-  'editFirAutoClick', 'autoClickMulzimanTab',
+  'editFirAutoClick', 'autoClickMulzimanTab', 'autoClickReportLink',
   'autoClickTab2', 'autoClickTab4', 'autoClickTab6', 'autoClickTab9', 'autoClickTab8', 'autoClickTab7',
   'autoClickTab15', 'autoClickTab3', 'autoClickTab10', 'autoClickTab17', 'autoClickTab12', 'autoClickTab13'
 ], function(result) {
   editFirAutoClick = !!result.editFirAutoClick;
   autoClickMulzimanTab = !!result.autoClickMulzimanTab;
+  autoClickReportLink = !!result.autoClickReportLink;
   tabToggles.tab2 = !!result.autoClickTab2;
   tabToggles.tab4 = !!result.autoClickTab4;
   tabToggles.tab6 = !!result.autoClickTab6;
@@ -278,6 +683,9 @@ chrome.storage && chrome.storage.sync.get([
   tabToggles.tab13 = !!result.autoClickTab13;
   if (editFirAutoClick && window.location.href.includes('/search/searchRecord/simple')) {
     setTimeout(tryAutoClickEditFIR, 300);
+  }
+  if (autoClickReportLink && window.location.href.includes('/register/register21/0/search')) {
+    setTimeout(tryAutoClickReportLink, 300);
   }
   if (/\/firSystem\/editFIR\//.test(window.location.href)) {
     if (autoClickMulzimanTab) setTimeout(tryAutoClickMulzimanTab, 300);
@@ -312,14 +720,306 @@ if (window.location.href.includes('firSystem/FIRlist')) {
   }, 500);
 }
 
-// On searchPerson page load, check if this tab is the active CNIC bulk session
+// Function to inject FIR bulk widget on register21 page
+function injectFirBulkWidget() {
+  if (!window.location.href.includes('/register/register21')) return;
+  if (document.getElementById('fir-bulk-widget')) return;
+
+  // Find the form - look for form containing fir_id input
+  const firInput = document.getElementById('fir_id');
+  if (!firInput) return;
+  
+  const form = firInput.closest('form');
+  if (!form) return;
+  
+  // Find the row containing the FIR input
+  const firInputRow = firInput.closest('.row') || firInput.closest('div[class*="row"]');
+  if (!firInputRow) return;
+
+  // Create column container matching form structure
+  const colDiv = document.createElement('div');
+  colDiv.className = 'col-lg-3';
+  colDiv.id = 'fir-bulk-widget';
+
+  // Create form group wrapper with horizontal layout
+  const formGroup = document.createElement('div');
+  formGroup.className = 'form-group';
+  formGroup.style.display = 'flex';
+  formGroup.style.alignItems = 'flex-end';
+  formGroup.style.gap = '10px';
+
+  // Beautiful textarea with fixed dimensions
+  const textarea = document.createElement('textarea');
+  textarea.id = 'fir-bulk-input';
+  textarea.className = 'form-control';
+  textarea.placeholder = 'Paste FIR numbers here\nOne per line...';
+  textarea.style.width = '200px';
+  textarea.style.height = '100px';
+  textarea.style.resize = 'none';
+  textarea.style.fontSize = '13px';
+  textarea.style.padding = '10px';
+  textarea.style.border = '2px solid #e0e0e0';
+  textarea.style.borderRadius = '8px';
+  textarea.style.transition = 'all 0.3s ease';
+  textarea.style.fontFamily = 'inherit';
+  textarea.style.lineHeight = '1.5';
+  
+  // Interactive focus effects
+  textarea.addEventListener('focus', () => {
+    textarea.style.borderColor = '#5cb85c';
+    textarea.style.boxShadow = '0 0 0 3px rgba(92, 184, 92, 0.1)';
+    textarea.style.outline = 'none';
+  });
+  
+  textarea.addEventListener('blur', () => {
+    textarea.style.borderColor = '#e0e0e0';
+    textarea.style.boxShadow = 'none';
+  });
+  
+  formGroup.appendChild(textarea);
+
+  // Button container (vertical stack) - aligned to bottom
+  const buttonContainer = document.createElement('div');
+  buttonContainer.style.display = 'flex';
+  buttonContainer.style.flexDirection = 'column';
+  buttonContainer.style.gap = '8px';
+  buttonContainer.style.alignItems = 'stretch';
+  buttonContainer.style.justifyContent = 'flex-end';
+
+  // Toggle switch for FIR/Rod selection
+  const toggleContainer = document.createElement('div');
+  toggleContainer.style.display = 'flex';
+  toggleContainer.style.gap = '12px';
+  toggleContainer.style.marginBottom = '6px';
+  toggleContainer.style.fontSize = '12px';
+  toggleContainer.style.alignItems = 'center';
+
+  const firRadio = document.createElement('input');
+  firRadio.type = 'radio';
+  firRadio.name = 'fir-rod-bulk-type';
+  firRadio.id = 'fir-rod-bulk-fir';
+  firRadio.value = 'fir';
+  firRadio.checked = true;
+  firRadio.style.cursor = 'pointer';
+  firRadio.style.marginRight = '4px';
+
+  const firLabel = document.createElement('label');
+  firLabel.htmlFor = 'fir-rod-bulk-fir';
+  firLabel.textContent = 'FIR Number';
+  firLabel.style.cursor = 'pointer';
+  firLabel.style.marginRight = '8px';
+  firLabel.style.fontWeight = '500';
+  firLabel.style.color = '#333';
+
+  const rodRadio = document.createElement('input');
+  rodRadio.type = 'radio';
+  rodRadio.name = 'fir-rod-bulk-type';
+  rodRadio.id = 'fir-rod-bulk-rod';
+  rodRadio.value = 'rod';
+  rodRadio.style.cursor = 'pointer';
+  rodRadio.style.marginRight = '4px';
+
+  const rodLabel = document.createElement('label');
+  rodLabel.htmlFor = 'fir-rod-bulk-rod';
+  rodLabel.textContent = 'Rod Number';
+  rodLabel.style.cursor = 'pointer';
+  rodLabel.style.fontWeight = '500';
+  rodLabel.style.color = '#333';
+
+  toggleContainer.appendChild(firRadio);
+  toggleContainer.appendChild(firLabel);
+  toggleContainer.appendChild(rodRadio);
+  toggleContainer.appendChild(rodLabel);
+
+  // Update placeholder based on selection
+  const updatePlaceholder = () => {
+    const selectedType = document.querySelector('input[name="fir-rod-bulk-type"]:checked').value;
+    textarea.placeholder = selectedType === 'fir' 
+      ? 'Paste FIR numbers here\nOne per line...'
+      : 'Paste Rod numbers here\nOne per line...';
+  };
+
+  firRadio.addEventListener('change', updatePlaceholder);
+  rodRadio.addEventListener('change', updatePlaceholder);
+
+  buttonContainer.appendChild(toggleContainer);
+
+  // Interactive toggle button - starts as "Bulk Search"
+  const toggleBtn = document.createElement('button');
+  toggleBtn.type = 'button';
+  toggleBtn.id = 'fir-bulk-toggle-btn';
+  toggleBtn.textContent = '🚀 Bulk Search';
+  toggleBtn.style.padding = '12px 20px';
+  toggleBtn.style.fontSize = '14px';
+  toggleBtn.style.fontWeight = '600';
+  toggleBtn.style.border = 'none';
+  toggleBtn.style.borderRadius = '8px';
+  toggleBtn.style.cursor = 'pointer';
+  toggleBtn.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+  toggleBtn.style.position = 'relative';
+  toggleBtn.style.overflow = 'hidden';
+  toggleBtn.style.minWidth = '140px';
+  toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+  toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
+  toggleBtn.style.color = '#fff';
+  toggleBtn.style.textTransform = 'uppercase';
+  toggleBtn.style.letterSpacing = '0.5px';
+  
+  // Add hover effect
+  toggleBtn.addEventListener('mouseenter', () => {
+    toggleBtn.style.transform = 'translateY(-2px)';
+    toggleBtn.style.boxShadow = '0 6px 16px rgba(92, 184, 92, 0.4)';
+  });
+  
+  toggleBtn.addEventListener('mouseleave', () => {
+    if (!firBulkActive) {
+      toggleBtn.style.transform = 'translateY(0)';
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+    }
+  });
+  
+  // Add active/pressed effect
+  toggleBtn.addEventListener('mousedown', () => {
+    toggleBtn.style.transform = 'translateY(0) scale(0.98)';
+  });
+  
+  toggleBtn.addEventListener('mouseup', () => {
+    if (!firBulkActive) {
+      toggleBtn.style.transform = 'translateY(-2px)';
+    }
+  });
+  
+  buttonContainer.appendChild(toggleBtn);
+
+  // Status indicator - compact and beautiful
+  const status = document.createElement('div');
+  status.id = 'fir-bulk-status-inline';
+  status.style.fontSize = '11px';
+  status.style.color = '#666';
+  status.style.minHeight = '16px';
+  status.style.textAlign = 'center';
+  status.style.padding = '4px 8px';
+  status.style.borderRadius = '4px';
+  status.style.background = '#f8f9fa';
+  status.style.transition = 'all 0.3s ease';
+  buttonContainer.appendChild(status);
+
+  formGroup.appendChild(buttonContainer);
+  colDiv.appendChild(formGroup);
+
+  // Insert into form row (before the FIR input column)
+  const firInputCol = firInput.closest('.col-lg-2') || firInput.closest('[class*="col-"]');
+  if (firInputCol && firInputCol.parentNode) {
+    firInputCol.parentNode.insertBefore(colDiv, firInputCol);
+  } else {
+    firInputRow.appendChild(colDiv);
+  }
+
+  // Function to update button state
+  const updateButtonState = (isActive) => {
+    if (isActive) {
+      toggleBtn.textContent = '⏹ Stop';
+      toggleBtn.style.background = 'linear-gradient(135deg, #d9534f 0%, #c9302c 100%)';
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(217, 83, 79, 0.3)';
+    } else {
+      toggleBtn.textContent = '🚀 Bulk Search';
+      toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+      toggleBtn.style.transform = 'translateY(0)';
+    }
+  };
+
+  // Event listener for toggle button
+  toggleBtn.addEventListener('click', () => {
+    if (firBulkActive) {
+      // Stop the bulk search
+      stopFirBulkSession();
+      status.textContent = 'Stopped.';
+      status.style.color = '#d9534f';
+      status.style.background = '#ffe6e6';
+      updateButtonState(false);
+    } else {
+      // Start the bulk search
+      const input = textarea.value;
+      const numbers = input.split(/\r?\n/).map(n => n.trim()).filter(n => n.length > 0);
+      if (numbers.length === 0) {
+        const searchType = document.querySelector('input[name="fir-rod-bulk-type"]:checked').value;
+        const typeLabel = searchType === 'fir' ? 'FIR number' : 'Rod number';
+        status.textContent = `Please enter at least one ${typeLabel}.`;
+        status.style.color = '#d9534f';
+        status.style.background = '#ffe6e6';
+        // Shake animation
+        toggleBtn.style.animation = 'shake 0.5s';
+        setTimeout(() => {
+          toggleBtn.style.animation = '';
+        }, 500);
+        return;
+      }
+      const searchType = document.querySelector('input[name="fir-rod-bulk-type"]:checked').value;
+      const typeLabel = searchType === 'fir' ? 'FIR' : 'Rod';
+      status.textContent = `Processing ${numbers.length} ${typeLabel}(s)...`;
+      status.style.color = '#5cb85c';
+      status.style.background = '#e8f5e9';
+      updateButtonState(true);
+      startFirBulkSession(numbers, searchType);
+    }
+  });
+
+  // Add shake animation CSS if not exists
+  if (!document.getElementById('cnic-bulk-animations')) {
+    const style = document.createElement('style');
+    style.id = 'cnic-bulk-animations';
+    style.textContent = `
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-5px); }
+        75% { transform: translateX(5px); }
+      }
+    `;
+    document.head.appendChild(style);
+  }
+}
+
+// On searchPerson page load, inject widget and check if this tab is the active CNIC bulk session
 if (window.location.href.includes('/search/searchPerson')) {
+  // Try injecting immediately and retry if form not found
+  const tryInject = () => {
+    injectCnicBulkWidget();
+    // If widget wasn't injected (form not found), retry after a short delay
+    if (!document.getElementById('cnic-bulk-widget')) {
+      setTimeout(tryInject, 300);
+    }
+  };
+  
   setTimeout(() => {
+    tryInject();
     let cnicBulkData = JSON.parse(localStorage.getItem('cnic_bulk_data') || '{}');
     if (cnicBulkData.sessionId && cnicBulkData.numbers && cnicBulkData.numbers.length > 0) {
       if (!cnicBulkSessionId) cnicBulkSessionId = cnicBulkData.sessionId;
       cnicBulkActive = true;
       processNextCNIC();
+    }
+  }, 500);
+}
+
+// On register21 page load, inject widget and check if this tab is the active FIR bulk session
+if (window.location.href.includes('/register/register21')) {
+  // Try injecting immediately and retry if form not found
+  const tryInject = () => {
+    injectFirBulkWidget();
+    // If widget wasn't injected (form not found), retry after a short delay
+    if (!document.getElementById('fir-bulk-widget')) {
+      setTimeout(tryInject, 300);
+    }
+  };
+  
+  setTimeout(() => {
+    tryInject();
+    let firBulkData = JSON.parse(localStorage.getItem('fir_bulk_data') || '{}');
+    if (firBulkData.sessionId && firBulkData.numbers && firBulkData.numbers.length > 0) {
+      if (!firBulkSessionId) firBulkSessionId = firBulkData.sessionId;
+      firBulkActive = true;
+      processNextFIR();
     }
   }, 500);
 }
