@@ -1017,26 +1017,112 @@ function injectFirListBulkWidget() {
   if (!window.location.href.includes('firSystem/FIRlist')) return;
   if (document.getElementById('firlist-bulk-widget')) return;
 
-  // Find the ibox-title div
-  const iboxTitle = document.querySelector('.ibox-title');
-  if (!iboxTitle) return;
+  // Track expanded/collapsed state
+  let isExpanded = false;
 
-  // Find the h5 element inside ibox-title
-  const h5Element = iboxTitle.querySelector('h5');
-  if (!h5Element) return;
-
-  // Create widget container - inline with buttons
+  // Create absolute position container for left side floating widget
   const widgetDiv = document.createElement('div');
   widgetDiv.id = 'firlist-bulk-widget';
-  widgetDiv.style.display = 'inline-block';
-  widgetDiv.style.marginLeft = '15px';
-  widgetDiv.style.verticalAlign = 'middle';
+  // Absolute positioning on left side - moves with page scroll
+  widgetDiv.style.position = 'absolute';
+  widgetDiv.style.left = '20px';
+  widgetDiv.style.zIndex = '9999';
+  widgetDiv.style.backgroundColor = '#fff';
+  widgetDiv.style.padding = '0';
+  widgetDiv.style.borderRadius = '50px'; // Start as round button
+  // Cool shadow with multiple layers for depth
+  widgetDiv.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 0 20px rgba(92, 184, 92, 0.1)';
+  widgetDiv.style.border = 'none';
+  widgetDiv.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+  widgetDiv.style.overflow = 'hidden';
+  widgetDiv.style.width = '60px';
+  widgetDiv.style.height = '60px';
+  widgetDiv.style.display = 'flex';
+  widgetDiv.style.alignItems = 'center';
+  widgetDiv.style.justifyContent = 'center';
+  widgetDiv.style.cursor = 'pointer';
+  
+  // Round button for collapsed state
+  const roundButton = document.createElement('button');
+  roundButton.id = 'firlist-bulk-round-btn';
+  roundButton.textContent = '🚀';
+  roundButton.style.width = '60px';
+  roundButton.style.height = '60px';
+  roundButton.style.borderRadius = '50%';
+  roundButton.style.border = 'none';
+  roundButton.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
+  roundButton.style.color = '#fff';
+  roundButton.style.fontSize = '24px';
+  roundButton.style.cursor = 'pointer';
+  roundButton.style.display = 'flex';
+  roundButton.style.alignItems = 'center';
+  roundButton.style.justifyContent = 'center';
+  roundButton.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+  roundButton.style.transition = 'all 0.3s ease';
+  roundButton.style.padding = '0';
+  roundButton.style.margin = '0';
+  
+  // Hover effect for round button
+  roundButton.addEventListener('mouseenter', () => {
+    roundButton.style.transform = 'scale(1.1)';
+    roundButton.style.boxShadow = '0 6px 16px rgba(92, 184, 92, 0.4)';
+  });
+  
+  roundButton.addEventListener('mouseleave', () => {
+    roundButton.style.transform = 'scale(1)';
+    roundButton.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+  });
+
+  // Expanded content container (hidden initially)
+  const expandedContent = document.createElement('div');
+  expandedContent.id = 'firlist-bulk-expanded-content';
+  expandedContent.style.display = 'none';
+  expandedContent.style.padding = '15px';
+  expandedContent.style.width = '100%';
+  expandedContent.style.height = '100%';
+  expandedContent.style.position = 'relative';
+
+  // Close button (X) for expanded state
+  const closeButton = document.createElement('button');
+  closeButton.textContent = '✕';
+  closeButton.style.position = 'absolute';
+  closeButton.style.top = '8px';
+  closeButton.style.right = '8px';
+  closeButton.style.width = '28px';
+  closeButton.style.height = '28px';
+  closeButton.style.borderRadius = '50%';
+  closeButton.style.border = 'none';
+  closeButton.style.background = 'rgba(0, 0, 0, 0.1)';
+  closeButton.style.color = '#666';
+  closeButton.style.fontSize = '18px';
+  closeButton.style.cursor = 'pointer';
+  closeButton.style.display = 'flex';
+  closeButton.style.alignItems = 'center';
+  closeButton.style.justifyContent = 'center';
+  closeButton.style.transition = 'all 0.2s ease';
+  closeButton.style.lineHeight = '1';
+  closeButton.style.zIndex = '10000';
+  closeButton.style.padding = '0';
+  closeButton.style.margin = '0';
+  
+  closeButton.addEventListener('mouseenter', () => {
+    closeButton.style.background = 'rgba(217, 83, 79, 0.2)';
+    closeButton.style.color = '#d9534f';
+    closeButton.style.transform = 'scale(1.1)';
+  });
+  
+  closeButton.addEventListener('mouseleave', () => {
+    closeButton.style.background = 'rgba(0, 0, 0, 0.1)';
+    closeButton.style.color = '#666';
+    closeButton.style.transform = 'scale(1)';
+  });
 
   // Create form group wrapper with horizontal layout
   const formGroup = document.createElement('div');
   formGroup.style.display = 'flex';
   formGroup.style.alignItems = 'flex-end';
   formGroup.style.gap = '10px';
+  formGroup.style.position = 'relative';
 
   // Beautiful textarea with fixed dimensions
   const textarea = document.createElement('textarea');
@@ -1137,10 +1223,99 @@ function injectFirListBulkWidget() {
   buttonContainer.appendChild(status);
 
   formGroup.appendChild(buttonContainer);
-  widgetDiv.appendChild(formGroup);
+  
+  // Add close button to expanded content
+  expandedContent.appendChild(closeButton);
+  expandedContent.appendChild(formGroup);
+  
+  // Add round button and expanded content to main container
+  widgetDiv.appendChild(roundButton);
+  widgetDiv.appendChild(expandedContent);
 
-  // Insert into h5 element after the existing buttons
-  h5Element.appendChild(widgetDiv);
+  // Expand/collapse functions
+  const expandWidget = () => {
+    isExpanded = true;
+    roundButton.style.display = 'none';
+    expandedContent.style.display = 'block';
+    
+    // Animate container expansion
+    widgetDiv.style.display = 'block';
+    widgetDiv.style.width = 'auto';
+    widgetDiv.style.minWidth = '350px';
+    widgetDiv.style.height = 'auto';
+    widgetDiv.style.borderRadius = '12px';
+    widgetDiv.style.padding = '0';
+    widgetDiv.style.border = '2px solid #e0e0e0';
+    widgetDiv.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.2), 0 0 20px rgba(92, 184, 92, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
+    widgetDiv.style.cursor = 'default';
+    
+    // Update position after expansion
+    setTimeout(updateWidgetPosition, 100);
+  };
+  
+  const collapseWidget = () => {
+    isExpanded = false;
+    expandedContent.style.display = 'none';
+    roundButton.style.display = 'flex';
+    
+    // Animate container collapse
+    widgetDiv.style.display = 'flex';
+    widgetDiv.style.width = '60px';
+    widgetDiv.style.height = '60px';
+    widgetDiv.style.borderRadius = '50px';
+    widgetDiv.style.padding = '0';
+    widgetDiv.style.border = 'none';
+    widgetDiv.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 0 20px rgba(92, 184, 92, 0.1)';
+    widgetDiv.style.cursor = 'pointer';
+    
+    // Update position after collapse
+    setTimeout(updateWidgetPosition, 100);
+  };
+  
+  // Close button click handler
+  closeButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    collapseWidget();
+  });
+  
+  // Round button click handler - expand widget
+  roundButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    expandWidget();
+  });
+
+  // Append directly to body for absolute positioning
+  document.body.appendChild(widgetDiv);
+  
+  // Calculate initial position - center vertically in viewport
+  const updateWidgetPosition = () => {
+    const scrollY = window.scrollY || window.pageYOffset;
+    const viewportHeight = window.innerHeight;
+    const widgetHeight = isExpanded ? (widgetDiv.offsetHeight || 200) : 60;
+    
+    // Position widget at center of viewport + scroll position
+    // This makes it move up/down as page scrolls
+    const topPosition = scrollY + (viewportHeight / 2) - (widgetHeight / 2);
+    widgetDiv.style.top = topPosition + 'px';
+  };
+  
+  // Prevent clicks inside expanded content from collapsing
+  expandedContent.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+  
+  // Update position on scroll and resize
+  let scrollRaf = null;
+  const handleScroll = () => {
+    if (scrollRaf) cancelAnimationFrame(scrollRaf);
+    scrollRaf = requestAnimationFrame(updateWidgetPosition);
+  };
+  
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  window.addEventListener('resize', updateWidgetPosition);
+  
+  // Set initial position after a short delay to ensure widget is rendered
+  setTimeout(updateWidgetPosition, 100);
 
   // Function to update button state
   const updateButtonState = (isActive) => {
@@ -1156,8 +1331,9 @@ function injectFirListBulkWidget() {
     }
   };
 
-  // Event listener for toggle button
-  toggleBtn.addEventListener('click', () => {
+  // Event listener for toggle button - prevent propagation
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (firBulkActive) {
       // Stop the bulk search
       stopFirBulkSession();
@@ -1256,21 +1432,105 @@ function injectFirBulkWidget() {
   if (!window.location.href.includes('/register/register21')) return;
   if (document.getElementById('fir-bulk-widget')) return;
 
-  // Find the form - look for form containing fir_id input
-  const firInput = document.getElementById('fir_id');
-  if (!firInput) return;
-  
-  const form = firInput.closest('form');
-  if (!form) return;
-  
-  // Find the row containing the FIR input
-  const firInputRow = firInput.closest('.row') || firInput.closest('div[class*="row"]');
-  if (!firInputRow) return;
+  // Track expanded/collapsed state
+  let isExpanded = false;
 
-  // Create column container matching form structure
+  // Create absolute position container for left side floating widget
   const colDiv = document.createElement('div');
-  colDiv.className = 'col-lg-3';
   colDiv.id = 'fir-bulk-widget';
+  // Absolute positioning on left side - moves with page scroll
+  colDiv.style.position = 'absolute';
+  colDiv.style.left = '20px';
+  colDiv.style.zIndex = '9999';
+  colDiv.style.backgroundColor = '#fff';
+  colDiv.style.padding = '0';
+  colDiv.style.borderRadius = '50px'; // Start as round button
+  // Cool shadow with multiple layers for depth
+  colDiv.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 0 20px rgba(92, 184, 92, 0.1)';
+  colDiv.style.border = 'none';
+  colDiv.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1), border-radius 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+  colDiv.style.overflow = 'hidden';
+  colDiv.style.width = '60px';
+  colDiv.style.height = '60px';
+  colDiv.style.display = 'flex';
+  colDiv.style.alignItems = 'center';
+  colDiv.style.justifyContent = 'center';
+  colDiv.style.cursor = 'pointer';
+  
+  // Round button for collapsed state
+  const roundButton = document.createElement('button');
+  roundButton.id = 'fir-bulk-round-btn';
+  roundButton.textContent = '🚀';
+  roundButton.style.width = '60px';
+  roundButton.style.height = '60px';
+  roundButton.style.borderRadius = '50%';
+  roundButton.style.border = 'none';
+  roundButton.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
+  roundButton.style.color = '#fff';
+  roundButton.style.fontSize = '24px';
+  roundButton.style.cursor = 'pointer';
+  roundButton.style.display = 'flex';
+  roundButton.style.alignItems = 'center';
+  roundButton.style.justifyContent = 'center';
+  roundButton.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+  roundButton.style.transition = 'all 0.3s ease';
+  roundButton.style.padding = '0';
+  roundButton.style.margin = '0';
+  
+  // Hover effect for round button
+  roundButton.addEventListener('mouseenter', () => {
+    roundButton.style.transform = 'scale(1.1)';
+    roundButton.style.boxShadow = '0 6px 16px rgba(92, 184, 92, 0.4)';
+  });
+  
+  roundButton.addEventListener('mouseleave', () => {
+    roundButton.style.transform = 'scale(1)';
+    roundButton.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+  });
+
+  // Expanded content container (hidden initially)
+  const expandedContent = document.createElement('div');
+  expandedContent.id = 'fir-bulk-expanded-content';
+  expandedContent.style.display = 'none';
+  expandedContent.style.padding = '15px';
+  expandedContent.style.width = '100%';
+  expandedContent.style.height = '100%';
+  expandedContent.style.position = 'relative';
+
+  // Close button (X) for expanded state
+  const closeButton = document.createElement('button');
+  closeButton.textContent = '✕';
+  closeButton.style.position = 'absolute';
+  closeButton.style.top = '8px';
+  closeButton.style.right = '8px';
+  closeButton.style.width = '28px';
+  closeButton.style.height = '28px';
+  closeButton.style.borderRadius = '50%';
+  closeButton.style.border = 'none';
+  closeButton.style.background = 'rgba(0, 0, 0, 0.1)';
+  closeButton.style.color = '#666';
+  closeButton.style.fontSize = '18px';
+  closeButton.style.cursor = 'pointer';
+  closeButton.style.display = 'flex';
+  closeButton.style.alignItems = 'center';
+  closeButton.style.justifyContent = 'center';
+  closeButton.style.transition = 'all 0.2s ease';
+  closeButton.style.lineHeight = '1';
+  closeButton.style.zIndex = '10000';
+  closeButton.style.padding = '0';
+  closeButton.style.margin = '0';
+  
+  closeButton.addEventListener('mouseenter', () => {
+    closeButton.style.background = 'rgba(217, 83, 79, 0.2)';
+    closeButton.style.color = '#d9534f';
+    closeButton.style.transform = 'scale(1.1)';
+  });
+  
+  closeButton.addEventListener('mouseleave', () => {
+    closeButton.style.background = 'rgba(0, 0, 0, 0.1)';
+    closeButton.style.color = '#666';
+    closeButton.style.transform = 'scale(1)';
+  });
 
   // Create form group wrapper with horizontal layout
   const formGroup = document.createElement('div');
@@ -1278,6 +1538,7 @@ function injectFirBulkWidget() {
   formGroup.style.display = 'flex';
   formGroup.style.alignItems = 'flex-end';
   formGroup.style.gap = '10px';
+  formGroup.style.position = 'relative';
 
   // Beautiful textarea with fixed dimensions
   const textarea = document.createElement('textarea');
@@ -1436,15 +1697,99 @@ function injectFirBulkWidget() {
   buttonContainer.appendChild(status);
 
   formGroup.appendChild(buttonContainer);
-  colDiv.appendChild(formGroup);
+  
+  // Add close button to expanded content
+  expandedContent.appendChild(closeButton);
+  expandedContent.appendChild(formGroup);
+  
+  // Add round button and expanded content to main container
+  colDiv.appendChild(roundButton);
+  colDiv.appendChild(expandedContent);
 
-  // Insert into form row (before the FIR input column)
-  const firInputCol = firInput.closest('.col-lg-2') || firInput.closest('[class*="col-"]');
-  if (firInputCol && firInputCol.parentNode) {
-    firInputCol.parentNode.insertBefore(colDiv, firInputCol);
-  } else {
-    firInputRow.appendChild(colDiv);
-  }
+  // Expand/collapse functions
+  const expandWidget = () => {
+    isExpanded = true;
+    roundButton.style.display = 'none';
+    expandedContent.style.display = 'block';
+    
+    // Animate container expansion
+    colDiv.style.display = 'block';
+    colDiv.style.width = 'auto';
+    colDiv.style.minWidth = '380px';
+    colDiv.style.height = 'auto';
+    colDiv.style.borderRadius = '12px';
+    colDiv.style.padding = '0';
+    colDiv.style.border = '2px solid #e0e0e0';
+    colDiv.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.2), 0 0 20px rgba(92, 184, 92, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
+    colDiv.style.cursor = 'default';
+    
+    // Update position after expansion
+    setTimeout(updateWidgetPosition, 100);
+  };
+  
+  const collapseWidget = () => {
+    isExpanded = false;
+    expandedContent.style.display = 'none';
+    roundButton.style.display = 'flex';
+    
+    // Animate container collapse
+    colDiv.style.display = 'flex';
+    colDiv.style.width = '60px';
+    colDiv.style.height = '60px';
+    colDiv.style.borderRadius = '50px';
+    colDiv.style.padding = '0';
+    colDiv.style.border = 'none';
+    colDiv.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 0 20px rgba(92, 184, 92, 0.1)';
+    colDiv.style.cursor = 'pointer';
+    
+    // Update position after collapse
+    setTimeout(updateWidgetPosition, 100);
+  };
+  
+  // Close button click handler
+  closeButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    collapseWidget();
+  });
+  
+  // Round button click handler - expand widget
+  roundButton.addEventListener('click', (e) => {
+    e.stopPropagation();
+    expandWidget();
+  });
+
+  // Append directly to body for absolute positioning
+  document.body.appendChild(colDiv);
+  
+  // Calculate initial position - center vertically in viewport
+  const updateWidgetPosition = () => {
+    const scrollY = window.scrollY || window.pageYOffset;
+    const viewportHeight = window.innerHeight;
+    const widgetHeight = isExpanded ? (colDiv.offsetHeight || 200) : 60;
+    
+    // Position widget at center of viewport + scroll position
+    // This makes it move up/down as page scrolls
+    const topPosition = scrollY + (viewportHeight / 2) - (widgetHeight / 2);
+    colDiv.style.top = topPosition + 'px';
+  };
+  
+  // Prevent clicks inside expanded content from collapsing
+  expandedContent.addEventListener('click', (e) => {
+    e.stopPropagation();
+  });
+  
+  // Update position on scroll and resize
+  let scrollRaf = null;
+  const handleScroll = () => {
+    if (scrollRaf) cancelAnimationFrame(scrollRaf);
+    scrollRaf = requestAnimationFrame(updateWidgetPosition);
+  };
+  
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  window.addEventListener('resize', updateWidgetPosition);
+  
+  // Set initial position after a short delay to ensure widget is rendered
+  setTimeout(updateWidgetPosition, 100);
 
   // Function to update button state
   const updateButtonState = (isActive) => {
@@ -1460,8 +1805,9 @@ function injectFirBulkWidget() {
     }
   };
 
-  // Event listener for toggle button
-  toggleBtn.addEventListener('click', () => {
+  // Event listener for toggle button - prevent propagation (register21)
+  toggleBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     if (firBulkActive) {
       // Stop the bulk search
       stopFirBulkSession();
