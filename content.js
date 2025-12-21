@@ -244,16 +244,16 @@ function processNextFIR() {
     }
   }
   
-  // Find the 'تلاش کریں' button
-  const buttons = document.querySelectorAll('input[type="submit"]');
-  let searchBtn = null;
-  buttons.forEach(btn => {
-    if (btn.value.includes('تلاش')) searchBtn = btn;
-  });
-  if (searchBtn) {
-    // Create a MouseEvent with ctrlKey true
-    const evt = new MouseEvent('click', { bubbles: true, cancelable: true, view: window, ctrlKey: true });
-    searchBtn.dispatchEvent(evt);
+    // Find the 'تلاش کریں' button
+    const buttons = document.querySelectorAll('input[type="submit"]');
+    let searchBtn = null;
+    buttons.forEach(btn => {
+      if (btn.value.includes('تلاش')) searchBtn = btn;
+    });
+    if (searchBtn) {
+      // Create a MouseEvent with ctrlKey true
+      const evt = new MouseEvent('click', { bubbles: true, cancelable: true, view: window, ctrlKey: true });
+      searchBtn.dispatchEvent(evt);
   }
   // If there are more FIRs, process next after 200ms (no reload)
   if (firNumbers.length > 0 && firBulkActive) {
@@ -407,10 +407,47 @@ function injectCnicBulkWidget() {
   const formRow = form.querySelector('.row[align="center"]');
   if (!formRow) return;
 
-  // Create column container matching form structure
+  // Create absolute position container for left side floating widget
   const colDiv = document.createElement('div');
-  colDiv.className = 'col-lg-3';
   colDiv.id = 'cnic-bulk-widget';
+  // Absolute positioning on left side - moves with page scroll
+  colDiv.style.position = 'absolute';
+  colDiv.style.left = '20px';
+  colDiv.style.zIndex = '9999';
+  colDiv.style.backgroundColor = '#fff';
+  colDiv.style.padding = '15px';
+  colDiv.style.borderRadius = '12px';
+  // Cool shadow with multiple layers for depth
+  colDiv.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.2), 0 0 20px rgba(92, 184, 92, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
+  colDiv.style.border = '2px solid #e0e0e0';
+  colDiv.style.transition = 'all 0.3s ease, box-shadow 0.3s ease, transform 0.2s ease';
+  colDiv.style.cursor = 'default';
+  
+  // Amazing cursor on hover - multiple cursor styles for cool effect
+  colDiv.addEventListener('mouseenter', () => {
+    // Try different cursor styles - grab is cool, but let's make it even better
+    colDiv.style.cursor = 'grab';
+    // Enhanced shadow and scale on hover
+    colDiv.style.boxShadow = '0 15px 50px rgba(0, 0, 0, 0.25), 0 0 30px rgba(92, 184, 92, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
+    colDiv.style.transform = 'scale(1.02) translateY(-2px)';
+    colDiv.style.borderColor = '#5cb85c';
+  });
+  
+  colDiv.addEventListener('mouseleave', () => {
+    colDiv.style.cursor = 'default';
+    colDiv.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.2), 0 0 20px rgba(92, 184, 92, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
+    colDiv.style.transform = 'scale(1) translateY(0)';
+    colDiv.style.borderColor = '#e0e0e0';
+  });
+  
+  // Add grab cursor when actually dragging (optional enhancement)
+  colDiv.addEventListener('mousedown', () => {
+    colDiv.style.cursor = 'grabbing';
+  });
+  
+  colDiv.addEventListener('mouseup', () => {
+    colDiv.style.cursor = 'grab';
+  });
 
   // Create form group wrapper with horizontal layout
   const formGroup = document.createElement('div');
@@ -445,6 +482,117 @@ function injectCnicBulkWidget() {
   textarea.addEventListener('blur', () => {
     textarea.style.borderColor = '#e0e0e0';
     textarea.style.boxShadow = 'none';
+  });
+  
+  // CNIC Formatting Function - formats 13-digit numbers to XXXXX-XXXXXXX-X format
+  const formatCNIC = (cnic) => {
+    // Remove all non-digit characters
+    const digits = cnic.replace(/\D/g, '');
+    // Check if it's exactly 13 digits
+    if (digits.length === 13) {
+      // Format as: 5 digits - 7 digits - 1 digit
+      return digits.substring(0, 5) + '-' + digits.substring(5, 12) + '-' + digits.substring(12);
+    }
+    // If already formatted or not 13 digits, return as is
+    return cnic;
+  };
+  
+  const formatCNICInput = () => {
+    const cursorPos = textarea.selectionStart;
+    const lines = textarea.value.split('\n');
+    let currentLineIndex = 0;
+    let lineStartPos = 0;
+    
+    // Find which line the cursor is on
+    for (let i = 0; i < lines.length; i++) {
+      const lineEnd = lineStartPos + lines[i].length;
+      if (cursorPos <= lineEnd || i === lines.length - 1) {
+        currentLineIndex = i;
+        break;
+      }
+      lineStartPos = lineEnd + 1; // +1 for newline
+    }
+    
+    const formattedLines = lines.map((line) => {
+      const trimmed = line.trim();
+      if (!trimmed) return line; // Preserve empty lines as is
+      
+      // Check if line contains a 13-digit number without dashes
+      const digitsOnly = trimmed.replace(/\D/g, '');
+      if (digitsOnly.length === 13) {
+        // Check if it's already formatted correctly
+        const formattedPattern = /^\d{5}-\d{7}-\d{1}$/;
+        if (formattedPattern.test(trimmed)) {
+          return line; // Already formatted correctly
+        }
+        // Format the CNIC
+        return formatCNIC(trimmed);
+      }
+      // If already formatted or not a CNIC, return as is
+      return line;
+    });
+    
+    const newValue = formattedLines.join('\n');
+    if (newValue !== textarea.value) {
+      // Calculate new cursor position
+      let newCursorPos = cursorPos;
+      const oldLines = textarea.value.split('\n');
+      const newLines = formattedLines;
+      
+      // Adjust cursor position if the current line was reformatted
+      if (oldLines[currentLineIndex] !== newLines[currentLineIndex]) {
+        const oldLine = oldLines[currentLineIndex];
+        const newLine = newLines[currentLineIndex];
+        const cursorInLine = cursorPos - lineStartPos;
+        
+        // If cursor was at the end of a 13-digit number, move it to end of formatted version
+        if (cursorInLine >= oldLine.length) {
+          // Calculate new line start position
+          let newLineStart = 0;
+          for (let i = 0; i < currentLineIndex; i++) {
+            newLineStart += newLines[i].length + 1; // +1 for newline
+          }
+          newCursorPos = newLineStart + newLine.length;
+        } else {
+          // Try to maintain relative position based on digit count
+          const digitsBeforeCursor = oldLine.substring(0, cursorInLine).replace(/\D/g, '').length;
+          let newPos = 0;
+          let digitsCounted = 0;
+          for (let i = 0; i < newLine.length && digitsCounted < digitsBeforeCursor; i++) {
+            if (/\d/.test(newLine[i])) {
+              digitsCounted++;
+            }
+            newPos = i + 1;
+          }
+          // Calculate new line start position
+          let newLineStart = 0;
+          for (let i = 0; i < currentLineIndex; i++) {
+            newLineStart += newLines[i].length + 1; // +1 for newline
+          }
+          newCursorPos = newLineStart + newPos;
+        }
+      }
+      
+      textarea.value = newValue;
+      textarea.setSelectionRange(newCursorPos, newCursorPos);
+    }
+  };
+  
+  // Handle input event (typing)
+  textarea.addEventListener('input', formatCNICInput);
+  
+  // Handle paste event
+  textarea.addEventListener('paste', () => {
+    // Use setTimeout to format after paste is complete
+    setTimeout(formatCNICInput, 0);
+  });
+  
+  // CTRL+Enter keyboard shortcut to trigger bulk search
+  textarea.addEventListener('keydown', (e) => {
+    if (e.ctrlKey && e.key === 'Enter') {
+      e.preventDefault();
+      toggleBtn.click();
+    }
   });
   
   formGroup.appendChild(textarea);
@@ -520,13 +668,33 @@ function injectCnicBulkWidget() {
   formGroup.appendChild(buttonContainer);
   colDiv.appendChild(formGroup);
 
-  // Insert into form row (before the submit button column)
-  const submitCol = formRow.querySelector('.col-lg-1');
-  if (submitCol) {
-    formRow.insertBefore(colDiv, submitCol);
-  } else {
-    formRow.appendChild(colDiv);
-  }
+  // Append directly to body for absolute positioning
+  document.body.appendChild(colDiv);
+  
+  // Calculate initial position - center vertically in viewport
+  const updateWidgetPosition = () => {
+    const scrollY = window.scrollY || window.pageYOffset;
+    const viewportHeight = window.innerHeight;
+    const widgetHeight = colDiv.offsetHeight || 200;
+    
+    // Position widget at center of viewport + scroll position
+    // This makes it move up/down as page scrolls
+    const topPosition = scrollY + (viewportHeight / 2) - (widgetHeight / 2);
+    colDiv.style.top = topPosition + 'px';
+  };
+  
+  // Update position on scroll and resize
+  let scrollRaf = null;
+  const handleScroll = () => {
+    if (scrollRaf) cancelAnimationFrame(scrollRaf);
+    scrollRaf = requestAnimationFrame(updateWidgetPosition);
+  };
+  
+  window.addEventListener('scroll', handleScroll, { passive: true });
+  window.addEventListener('resize', updateWidgetPosition);
+  
+  // Set initial position after a short delay to ensure widget is rendered
+  setTimeout(updateWidgetPosition, 100);
 
   // Function to update button state
   const updateButtonState = (isActive) => {
