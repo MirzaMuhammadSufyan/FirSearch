@@ -427,6 +427,7 @@ function injectCnicBulkWidget() {
   colDiv.style.overflow = 'hidden';
   colDiv.style.width = '60px';
   colDiv.style.height = '60px';
+  colDiv.style.minWidth = '60px';
   colDiv.style.display = 'flex';
   colDiv.style.alignItems = 'center';
   colDiv.style.justifyContent = 'center';
@@ -436,8 +437,8 @@ function injectCnicBulkWidget() {
   const roundButton = document.createElement('button');
   roundButton.id = 'cnic-bulk-round-btn';
   roundButton.textContent = '🚀';
-  roundButton.style.width = '60px';
-  roundButton.style.height = '60px';
+  roundButton.style.width = '100%';
+  roundButton.style.height = '100%';
   roundButton.style.borderRadius = '50%';
   roundButton.style.border = 'none';
   roundButton.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
@@ -447,10 +448,11 @@ function injectCnicBulkWidget() {
   roundButton.style.display = 'flex';
   roundButton.style.alignItems = 'center';
   roundButton.style.justifyContent = 'center';
-  roundButton.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+  roundButton.style.boxShadow = 'none';
   roundButton.style.transition = 'all 0.3s ease';
   roundButton.style.padding = '0';
   roundButton.style.margin = '0';
+  roundButton.style.flexShrink = '0';
   
   // Hover effect for round button
   roundButton.addEventListener('mouseenter', () => {
@@ -467,17 +469,21 @@ function injectCnicBulkWidget() {
   const expandedContent = document.createElement('div');
   expandedContent.id = 'cnic-bulk-expanded-content';
   expandedContent.style.display = 'none';
-  expandedContent.style.padding = '15px';
+  expandedContent.style.padding = '20px 15px 15px 15px';
+  expandedContent.style.paddingTop = '40px';
   expandedContent.style.width = '100%';
   expandedContent.style.height = '100%';
   expandedContent.style.position = 'relative';
+  expandedContent.style.background = 'rgba(255, 255, 255, 0.95)';
+  expandedContent.style.backdropFilter = 'blur(10px)';
+  expandedContent.style.webkitBackdropFilter = 'blur(10px)';
 
   // Close button (X) for expanded state
   const closeButton = document.createElement('button');
   closeButton.textContent = '✕';
   closeButton.style.position = 'absolute';
-  closeButton.style.top = '8px';
-  closeButton.style.right = '8px';
+  closeButton.style.top = '12px';
+  closeButton.style.right = '12px';
   closeButton.style.width = '28px';
   closeButton.style.height = '28px';
   closeButton.style.borderRadius = '50%';
@@ -495,16 +501,36 @@ function injectCnicBulkWidget() {
   closeButton.style.padding = '0';
   closeButton.style.margin = '0';
   
+  // Enhanced close button hover and focus effects
   closeButton.addEventListener('mouseenter', () => {
-    closeButton.style.background = 'rgba(217, 83, 79, 0.2)';
+    closeButton.style.background = 'rgba(217, 83, 79, 0.25)';
     closeButton.style.color = '#d9534f';
-    closeButton.style.transform = 'scale(1.1)';
+    closeButton.style.transform = 'scale(1.15) rotate(90deg)';
+    closeButton.style.boxShadow = '0 2px 8px rgba(217, 83, 79, 0.3)';
   });
   
   closeButton.addEventListener('mouseleave', () => {
     closeButton.style.background = 'rgba(0, 0, 0, 0.1)';
     closeButton.style.color = '#666';
-    closeButton.style.transform = 'scale(1)';
+    closeButton.style.transform = 'scale(1) rotate(0deg)';
+    closeButton.style.boxShadow = 'none';
+  });
+  
+  closeButton.addEventListener('focus', () => {
+    closeButton.style.outline = 'none';
+    closeButton.style.boxShadow = '0 0 0 3px rgba(217, 83, 79, 0.3)';
+  });
+  
+  closeButton.addEventListener('blur', () => {
+    closeButton.style.boxShadow = 'none';
+  });
+  
+  closeButton.addEventListener('mousedown', () => {
+    closeButton.style.transform = 'scale(0.95) rotate(90deg)';
+  });
+  
+  closeButton.addEventListener('mouseup', () => {
+    closeButton.style.transform = 'scale(1.15) rotate(90deg)';
   });
 
   // Create form group wrapper with horizontal layout
@@ -515,7 +541,7 @@ function injectCnicBulkWidget() {
   formGroup.style.gap = '10px';
   formGroup.style.position = 'relative';
 
-  // Beautiful textarea with fixed dimensions
+  // Beautiful textarea with fixed dimensions and enhanced UX
   const textarea = document.createElement('textarea');
   textarea.id = 'cnic-bulk-input';
   textarea.className = 'form-control';
@@ -524,23 +550,47 @@ function injectCnicBulkWidget() {
   textarea.style.height = '100px';
   textarea.style.resize = 'none';
   textarea.style.fontSize = '13px';
-  textarea.style.padding = '10px';
+  textarea.style.padding = '12px';
   textarea.style.border = '2px solid #e0e0e0';
-  textarea.style.borderRadius = '8px';
-  textarea.style.transition = 'all 0.3s ease';
+  textarea.style.borderRadius = '10px';
+  textarea.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
   textarea.style.fontFamily = 'inherit';
   textarea.style.lineHeight = '1.5';
+  textarea.style.background = '#fff';
+  textarea.style.color = '#333';
+  textarea.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
   
-  // Interactive focus effects
+  // Enhanced hover effect
+  textarea.addEventListener('mouseenter', () => {
+    if (document.activeElement !== textarea) {
+      textarea.style.borderColor = '#5cb85c';
+      textarea.style.boxShadow = '0 4px 8px rgba(92, 184, 92, 0.15)';
+      textarea.style.transform = 'translateY(-1px)';
+    }
+  });
+  
+  textarea.addEventListener('mouseleave', () => {
+    if (document.activeElement !== textarea) {
+      textarea.style.borderColor = '#e0e0e0';
+      textarea.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
+      textarea.style.transform = 'translateY(0)';
+    }
+  });
+  
+  // Enhanced focus effects
   textarea.addEventListener('focus', () => {
     textarea.style.borderColor = '#5cb85c';
-    textarea.style.boxShadow = '0 0 0 3px rgba(92, 184, 92, 0.1)';
+    textarea.style.boxShadow = '0 0 0 4px rgba(92, 184, 92, 0.15), 0 4px 12px rgba(92, 184, 92, 0.2)';
     textarea.style.outline = 'none';
+    textarea.style.transform = 'translateY(-2px)';
+    textarea.style.background = '#fafffe';
   });
   
   textarea.addEventListener('blur', () => {
     textarea.style.borderColor = '#e0e0e0';
-    textarea.style.boxShadow = 'none';
+    textarea.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
+    textarea.style.transform = 'translateY(0)';
+    textarea.style.background = '#fff';
   });
   
   // CNIC Formatting Function - formats 13-digit numbers to XXXXX-XXXXXXX-X format
@@ -664,64 +714,85 @@ function injectCnicBulkWidget() {
   buttonContainer.style.alignItems = 'stretch';
   buttonContainer.style.justifyContent = 'flex-end';
 
-  // Interactive toggle button - starts as "Bulk Search"
+  // Interactive toggle button - starts as "Bulk Search" with enhanced UX
   const toggleBtn = document.createElement('button');
   toggleBtn.type = 'button';
   toggleBtn.id = 'cnic-bulk-toggle-btn';
   toggleBtn.textContent = '🚀 Bulk Search';
-  toggleBtn.style.padding = '12px 20px';
+  toggleBtn.style.padding = '14px 24px';
   toggleBtn.style.fontSize = '14px';
   toggleBtn.style.fontWeight = '600';
   toggleBtn.style.border = 'none';
-  toggleBtn.style.borderRadius = '8px';
+  toggleBtn.style.borderRadius = '10px';
   toggleBtn.style.cursor = 'pointer';
   toggleBtn.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
   toggleBtn.style.position = 'relative';
   toggleBtn.style.overflow = 'hidden';
   toggleBtn.style.minWidth = '140px';
-  toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+  toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)';
   toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
   toggleBtn.style.color = '#fff';
   toggleBtn.style.textTransform = 'uppercase';
   toggleBtn.style.letterSpacing = '0.5px';
   
-  // Add hover effect
+  // Enhanced hover effect
   toggleBtn.addEventListener('mouseenter', () => {
-    toggleBtn.style.transform = 'translateY(-2px)';
-    toggleBtn.style.boxShadow = '0 6px 16px rgba(92, 184, 92, 0.4)';
+    if (!cnicBulkActive) {
+      toggleBtn.style.transform = 'translateY(-3px) scale(1.02)';
+      toggleBtn.style.boxShadow = '0 8px 20px rgba(92, 184, 92, 0.4), 0 4px 8px rgba(0, 0, 0, 0.15)';
+      toggleBtn.style.background = 'linear-gradient(135deg, #66c866 0%, #5cbe5c 100%)';
+    }
   });
   
   toggleBtn.addEventListener('mouseleave', () => {
     if (!cnicBulkActive) {
-      toggleBtn.style.transform = 'translateY(0)';
-      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+      toggleBtn.style.transform = 'translateY(0) scale(1)';
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)';
+      toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
     }
   });
   
-  // Add active/pressed effect
+  // Enhanced focus effect for accessibility
+  toggleBtn.addEventListener('focus', () => {
+    toggleBtn.style.outline = 'none';
+    toggleBtn.style.boxShadow = '0 0 0 4px rgba(92, 184, 92, 0.3), 0 4px 12px rgba(92, 184, 92, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)';
+  });
+  
+  toggleBtn.addEventListener('blur', () => {
+    if (!cnicBulkActive) {
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)';
+    }
+  });
+  
+  // Enhanced active/pressed effect
   toggleBtn.addEventListener('mousedown', () => {
-    toggleBtn.style.transform = 'translateY(0) scale(0.98)';
+    toggleBtn.style.transform = 'translateY(0) scale(0.97)';
+    toggleBtn.style.boxShadow = '0 2px 8px rgba(92, 184, 92, 0.3), 0 1px 2px rgba(0, 0, 0, 0.1)';
   });
   
   toggleBtn.addEventListener('mouseup', () => {
     if (!cnicBulkActive) {
-      toggleBtn.style.transform = 'translateY(-2px)';
+      toggleBtn.style.transform = 'translateY(-3px) scale(1.02)';
+      toggleBtn.style.boxShadow = '0 8px 20px rgba(92, 184, 92, 0.4), 0 4px 8px rgba(0, 0, 0, 0.15)';
     }
   });
   
   buttonContainer.appendChild(toggleBtn);
 
-  // Status indicator - compact and beautiful
+  // Status indicator - compact and beautiful with enhanced UX
   const status = document.createElement('div');
   status.id = 'cnic-bulk-status-inline';
-  status.style.fontSize = '11px';
+  status.style.fontSize = '12px';
   status.style.color = '#666';
-  status.style.minHeight = '16px';
+  status.style.minHeight = '20px';
   status.style.textAlign = 'center';
-  status.style.padding = '4px 8px';
-  status.style.borderRadius = '4px';
+  status.style.padding = '6px 10px';
+  status.style.borderRadius = '6px';
   status.style.background = '#f8f9fa';
-  status.style.transition = 'all 0.3s ease';
+  status.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+  status.style.border = '1px solid #e9ecef';
+  status.style.fontWeight = '500';
+  status.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
   buttonContainer.appendChild(status);
 
   formGroup.appendChild(buttonContainer);
@@ -740,16 +811,19 @@ function injectCnicBulkWidget() {
     roundButton.style.display = 'none';
     expandedContent.style.display = 'block';
     
-    // Animate container expansion
+    // Animate container expansion with attractive styling
     colDiv.style.display = 'block';
     colDiv.style.width = 'auto';
     colDiv.style.minWidth = '350px';
     colDiv.style.height = 'auto';
-    colDiv.style.borderRadius = '12px';
+    colDiv.style.borderRadius = '16px';
     colDiv.style.padding = '0';
-    colDiv.style.border = '2px solid #e0e0e0';
-    colDiv.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.2), 0 0 20px rgba(92, 184, 92, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
+    colDiv.style.border = '2px solid rgba(92, 184, 92, 0.3)';
+    colDiv.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.15), 0 0 30px rgba(92, 184, 92, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
     colDiv.style.cursor = 'default';
+    colDiv.style.background = 'rgba(255, 255, 255, 0.95)';
+    colDiv.style.backdropFilter = 'blur(10px)';
+    colDiv.style.webkitBackdropFilter = 'blur(10px)';
     
     // Update position after expansion
     setTimeout(updateWidgetPosition, 100);
@@ -760,15 +834,19 @@ function injectCnicBulkWidget() {
     expandedContent.style.display = 'none';
     roundButton.style.display = 'flex';
     
-    // Animate container collapse
+    // Animate container collapse - reset all expanded styles
     colDiv.style.display = 'flex';
     colDiv.style.width = '60px';
     colDiv.style.height = '60px';
+    colDiv.style.minWidth = '60px';
     colDiv.style.borderRadius = '50px';
     colDiv.style.padding = '0';
     colDiv.style.border = 'none';
     colDiv.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 0 20px rgba(92, 184, 92, 0.1)';
     colDiv.style.cursor = 'pointer';
+    colDiv.style.background = '#fff';
+    colDiv.style.backdropFilter = 'none';
+    colDiv.style.webkitBackdropFilter = 'none';
     
     // Update position after collapse
     setTimeout(updateWidgetPosition, 100);
@@ -1037,6 +1115,7 @@ function injectFirListBulkWidget() {
   widgetDiv.style.overflow = 'hidden';
   widgetDiv.style.width = '60px';
   widgetDiv.style.height = '60px';
+  widgetDiv.style.minWidth = '60px';
   widgetDiv.style.display = 'flex';
   widgetDiv.style.alignItems = 'center';
   widgetDiv.style.justifyContent = 'center';
@@ -1046,8 +1125,8 @@ function injectFirListBulkWidget() {
   const roundButton = document.createElement('button');
   roundButton.id = 'firlist-bulk-round-btn';
   roundButton.textContent = '🚀';
-  roundButton.style.width = '60px';
-  roundButton.style.height = '60px';
+  roundButton.style.width = '100%';
+  roundButton.style.height = '100%';
   roundButton.style.borderRadius = '50%';
   roundButton.style.border = 'none';
   roundButton.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
@@ -1057,10 +1136,11 @@ function injectFirListBulkWidget() {
   roundButton.style.display = 'flex';
   roundButton.style.alignItems = 'center';
   roundButton.style.justifyContent = 'center';
-  roundButton.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+  roundButton.style.boxShadow = 'none';
   roundButton.style.transition = 'all 0.3s ease';
   roundButton.style.padding = '0';
   roundButton.style.margin = '0';
+  roundButton.style.flexShrink = '0';
   
   // Hover effect for round button
   roundButton.addEventListener('mouseenter', () => {
@@ -1077,17 +1157,21 @@ function injectFirListBulkWidget() {
   const expandedContent = document.createElement('div');
   expandedContent.id = 'firlist-bulk-expanded-content';
   expandedContent.style.display = 'none';
-  expandedContent.style.padding = '15px';
+  expandedContent.style.padding = '20px 15px 15px 15px';
+  expandedContent.style.paddingTop = '40px';
   expandedContent.style.width = '100%';
   expandedContent.style.height = '100%';
   expandedContent.style.position = 'relative';
+  expandedContent.style.background = 'rgba(255, 255, 255, 0.95)';
+  expandedContent.style.backdropFilter = 'blur(10px)';
+  expandedContent.style.webkitBackdropFilter = 'blur(10px)';
 
   // Close button (X) for expanded state
   const closeButton = document.createElement('button');
   closeButton.textContent = '✕';
   closeButton.style.position = 'absolute';
-  closeButton.style.top = '8px';
-  closeButton.style.right = '8px';
+  closeButton.style.top = '12px';
+  closeButton.style.right = '12px';
   closeButton.style.width = '28px';
   closeButton.style.height = '28px';
   closeButton.style.borderRadius = '50%';
@@ -1105,16 +1189,36 @@ function injectFirListBulkWidget() {
   closeButton.style.padding = '0';
   closeButton.style.margin = '0';
   
+  // Enhanced close button hover and focus effects
   closeButton.addEventListener('mouseenter', () => {
-    closeButton.style.background = 'rgba(217, 83, 79, 0.2)';
+    closeButton.style.background = 'rgba(217, 83, 79, 0.25)';
     closeButton.style.color = '#d9534f';
-    closeButton.style.transform = 'scale(1.1)';
+    closeButton.style.transform = 'scale(1.15) rotate(90deg)';
+    closeButton.style.boxShadow = '0 2px 8px rgba(217, 83, 79, 0.3)';
   });
   
   closeButton.addEventListener('mouseleave', () => {
     closeButton.style.background = 'rgba(0, 0, 0, 0.1)';
     closeButton.style.color = '#666';
-    closeButton.style.transform = 'scale(1)';
+    closeButton.style.transform = 'scale(1) rotate(0deg)';
+    closeButton.style.boxShadow = 'none';
+  });
+  
+  closeButton.addEventListener('focus', () => {
+    closeButton.style.outline = 'none';
+    closeButton.style.boxShadow = '0 0 0 3px rgba(217, 83, 79, 0.3)';
+  });
+  
+  closeButton.addEventListener('blur', () => {
+    closeButton.style.boxShadow = 'none';
+  });
+  
+  closeButton.addEventListener('mousedown', () => {
+    closeButton.style.transform = 'scale(0.95) rotate(90deg)';
+  });
+  
+  closeButton.addEventListener('mouseup', () => {
+    closeButton.style.transform = 'scale(1.15) rotate(90deg)';
   });
 
   // Create form group wrapper with horizontal layout
@@ -1124,7 +1228,7 @@ function injectFirListBulkWidget() {
   formGroup.style.gap = '10px';
   formGroup.style.position = 'relative';
 
-  // Beautiful textarea with fixed dimensions
+  // Beautiful textarea with fixed dimensions and enhanced UX
   const textarea = document.createElement('textarea');
   textarea.id = 'firlist-bulk-input';
   textarea.className = 'form-control';
@@ -1133,23 +1237,47 @@ function injectFirListBulkWidget() {
   textarea.style.height = '100px';
   textarea.style.resize = 'none';
   textarea.style.fontSize = '13px';
-  textarea.style.padding = '10px';
+  textarea.style.padding = '12px';
   textarea.style.border = '2px solid #e0e0e0';
-  textarea.style.borderRadius = '8px';
-  textarea.style.transition = 'all 0.3s ease';
+  textarea.style.borderRadius = '10px';
+  textarea.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
   textarea.style.fontFamily = 'inherit';
   textarea.style.lineHeight = '1.5';
+  textarea.style.background = '#fff';
+  textarea.style.color = '#333';
+  textarea.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
   
-  // Interactive focus effects
+  // Enhanced hover effect
+  textarea.addEventListener('mouseenter', () => {
+    if (document.activeElement !== textarea) {
+      textarea.style.borderColor = '#5cb85c';
+      textarea.style.boxShadow = '0 4px 8px rgba(92, 184, 92, 0.15)';
+      textarea.style.transform = 'translateY(-1px)';
+    }
+  });
+  
+  textarea.addEventListener('mouseleave', () => {
+    if (document.activeElement !== textarea) {
+      textarea.style.borderColor = '#e0e0e0';
+      textarea.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
+      textarea.style.transform = 'translateY(0)';
+    }
+  });
+  
+  // Enhanced focus effects
   textarea.addEventListener('focus', () => {
     textarea.style.borderColor = '#5cb85c';
-    textarea.style.boxShadow = '0 0 0 3px rgba(92, 184, 92, 0.1)';
+    textarea.style.boxShadow = '0 0 0 4px rgba(92, 184, 92, 0.15), 0 4px 12px rgba(92, 184, 92, 0.2)';
     textarea.style.outline = 'none';
+    textarea.style.transform = 'translateY(-2px)';
+    textarea.style.background = '#fafffe';
   });
   
   textarea.addEventListener('blur', () => {
     textarea.style.borderColor = '#e0e0e0';
-    textarea.style.boxShadow = 'none';
+    textarea.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
+    textarea.style.transform = 'translateY(0)';
+    textarea.style.background = '#fff';
   });
   
   formGroup.appendChild(textarea);
@@ -1162,64 +1290,85 @@ function injectFirListBulkWidget() {
   buttonContainer.style.alignItems = 'stretch';
   buttonContainer.style.justifyContent = 'flex-end';
 
-  // Interactive toggle button - starts as "Bulk Search"
+  // Interactive toggle button - starts as "Bulk Search" with enhanced UX
   const toggleBtn = document.createElement('button');
   toggleBtn.type = 'button';
   toggleBtn.id = 'firlist-bulk-toggle-btn';
   toggleBtn.textContent = '🚀 Bulk Search';
-  toggleBtn.style.padding = '12px 20px';
+  toggleBtn.style.padding = '14px 24px';
   toggleBtn.style.fontSize = '14px';
   toggleBtn.style.fontWeight = '600';
   toggleBtn.style.border = 'none';
-  toggleBtn.style.borderRadius = '8px';
+  toggleBtn.style.borderRadius = '10px';
   toggleBtn.style.cursor = 'pointer';
   toggleBtn.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
   toggleBtn.style.position = 'relative';
   toggleBtn.style.overflow = 'hidden';
   toggleBtn.style.minWidth = '140px';
-  toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+  toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)';
   toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
   toggleBtn.style.color = '#fff';
   toggleBtn.style.textTransform = 'uppercase';
   toggleBtn.style.letterSpacing = '0.5px';
   
-  // Add hover effect
+  // Enhanced hover effect
   toggleBtn.addEventListener('mouseenter', () => {
-    toggleBtn.style.transform = 'translateY(-2px)';
-    toggleBtn.style.boxShadow = '0 6px 16px rgba(92, 184, 92, 0.4)';
+    if (!firBulkActive) {
+      toggleBtn.style.transform = 'translateY(-3px) scale(1.02)';
+      toggleBtn.style.boxShadow = '0 8px 20px rgba(92, 184, 92, 0.4), 0 4px 8px rgba(0, 0, 0, 0.15)';
+      toggleBtn.style.background = 'linear-gradient(135deg, #66c866 0%, #5cbe5c 100%)';
+    }
   });
   
   toggleBtn.addEventListener('mouseleave', () => {
     if (!firBulkActive) {
-      toggleBtn.style.transform = 'translateY(0)';
-      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+      toggleBtn.style.transform = 'translateY(0) scale(1)';
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)';
+      toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
     }
   });
   
-  // Add active/pressed effect
+  // Enhanced focus effect for accessibility
+  toggleBtn.addEventListener('focus', () => {
+    toggleBtn.style.outline = 'none';
+    toggleBtn.style.boxShadow = '0 0 0 4px rgba(92, 184, 92, 0.3), 0 4px 12px rgba(92, 184, 92, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)';
+  });
+  
+  toggleBtn.addEventListener('blur', () => {
+    if (!firBulkActive) {
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)';
+    }
+  });
+  
+  // Enhanced active/pressed effect
   toggleBtn.addEventListener('mousedown', () => {
-    toggleBtn.style.transform = 'translateY(0) scale(0.98)';
+    toggleBtn.style.transform = 'translateY(0) scale(0.97)';
+    toggleBtn.style.boxShadow = '0 2px 8px rgba(92, 184, 92, 0.3), 0 1px 2px rgba(0, 0, 0, 0.1)';
   });
   
   toggleBtn.addEventListener('mouseup', () => {
     if (!firBulkActive) {
-      toggleBtn.style.transform = 'translateY(-2px)';
+      toggleBtn.style.transform = 'translateY(-3px) scale(1.02)';
+      toggleBtn.style.boxShadow = '0 8px 20px rgba(92, 184, 92, 0.4), 0 4px 8px rgba(0, 0, 0, 0.15)';
     }
   });
   
   buttonContainer.appendChild(toggleBtn);
 
-  // Status indicator - compact and beautiful
+  // Status indicator - compact and beautiful with enhanced UX
   const status = document.createElement('div');
   status.id = 'firlist-bulk-status-inline';
-  status.style.fontSize = '11px';
+  status.style.fontSize = '12px';
   status.style.color = '#666';
-  status.style.minHeight = '16px';
+  status.style.minHeight = '20px';
   status.style.textAlign = 'center';
-  status.style.padding = '4px 8px';
-  status.style.borderRadius = '4px';
-  status.style.background = '#fff';
-  status.style.transition = 'all 0.3s ease';
+  status.style.padding = '6px 10px';
+  status.style.borderRadius = '6px';
+  status.style.background = '#f8f9fa';
+  status.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+  status.style.border = '1px solid #e9ecef';
+  status.style.fontWeight = '500';
+  status.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
   buttonContainer.appendChild(status);
 
   formGroup.appendChild(buttonContainer);
@@ -1238,16 +1387,19 @@ function injectFirListBulkWidget() {
     roundButton.style.display = 'none';
     expandedContent.style.display = 'block';
     
-    // Animate container expansion
+    // Animate container expansion with attractive styling
     widgetDiv.style.display = 'block';
     widgetDiv.style.width = 'auto';
     widgetDiv.style.minWidth = '350px';
     widgetDiv.style.height = 'auto';
-    widgetDiv.style.borderRadius = '12px';
+    widgetDiv.style.borderRadius = '16px';
     widgetDiv.style.padding = '0';
-    widgetDiv.style.border = '2px solid #e0e0e0';
-    widgetDiv.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.2), 0 0 20px rgba(92, 184, 92, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9)';
+    widgetDiv.style.border = '2px solid rgba(92, 184, 92, 0.3)';
+    widgetDiv.style.boxShadow = '0 20px 60px rgba(0, 0, 0, 0.15), 0 0 30px rgba(92, 184, 92, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.8)';
     widgetDiv.style.cursor = 'default';
+    widgetDiv.style.background = 'rgba(255, 255, 255, 0.95)';
+    widgetDiv.style.backdropFilter = 'blur(10px)';
+    widgetDiv.style.webkitBackdropFilter = 'blur(10px)';
     
     // Update position after expansion
     setTimeout(updateWidgetPosition, 100);
@@ -1258,15 +1410,19 @@ function injectFirListBulkWidget() {
     expandedContent.style.display = 'none';
     roundButton.style.display = 'flex';
     
-    // Animate container collapse
+    // Animate container collapse - reset all expanded styles
     widgetDiv.style.display = 'flex';
     widgetDiv.style.width = '60px';
     widgetDiv.style.height = '60px';
+    widgetDiv.style.minWidth = '60px';
     widgetDiv.style.borderRadius = '50px';
     widgetDiv.style.padding = '0';
     widgetDiv.style.border = 'none';
     widgetDiv.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 0 20px rgba(92, 184, 92, 0.1)';
     widgetDiv.style.cursor = 'pointer';
+    widgetDiv.style.background = '#fff';
+    widgetDiv.style.backdropFilter = 'none';
+    widgetDiv.style.webkitBackdropFilter = 'none';
     
     // Update position after collapse
     setTimeout(updateWidgetPosition, 100);
@@ -1452,6 +1608,7 @@ function injectFirBulkWidget() {
   colDiv.style.overflow = 'hidden';
   colDiv.style.width = '60px';
   colDiv.style.height = '60px';
+  colDiv.style.minWidth = '60px';
   colDiv.style.display = 'flex';
   colDiv.style.alignItems = 'center';
   colDiv.style.justifyContent = 'center';
@@ -1461,8 +1618,8 @@ function injectFirBulkWidget() {
   const roundButton = document.createElement('button');
   roundButton.id = 'fir-bulk-round-btn';
   roundButton.textContent = '🚀';
-  roundButton.style.width = '60px';
-  roundButton.style.height = '60px';
+  roundButton.style.width = '100%';
+  roundButton.style.height = '100%';
   roundButton.style.borderRadius = '50%';
   roundButton.style.border = 'none';
   roundButton.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
@@ -1472,10 +1629,11 @@ function injectFirBulkWidget() {
   roundButton.style.display = 'flex';
   roundButton.style.alignItems = 'center';
   roundButton.style.justifyContent = 'center';
-  roundButton.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+  roundButton.style.boxShadow = 'none';
   roundButton.style.transition = 'all 0.3s ease';
   roundButton.style.padding = '0';
   roundButton.style.margin = '0';
+  roundButton.style.flexShrink = '0';
   
   // Hover effect for round button
   roundButton.addEventListener('mouseenter', () => {
@@ -1492,17 +1650,21 @@ function injectFirBulkWidget() {
   const expandedContent = document.createElement('div');
   expandedContent.id = 'fir-bulk-expanded-content';
   expandedContent.style.display = 'none';
-  expandedContent.style.padding = '15px';
+  expandedContent.style.padding = '20px 15px 15px 15px';
+  expandedContent.style.paddingTop = '40px';
   expandedContent.style.width = '100%';
   expandedContent.style.height = '100%';
   expandedContent.style.position = 'relative';
+  expandedContent.style.background = 'rgba(255, 255, 255, 0.95)';
+  expandedContent.style.backdropFilter = 'blur(10px)';
+  expandedContent.style.webkitBackdropFilter = 'blur(10px)';
 
   // Close button (X) for expanded state
   const closeButton = document.createElement('button');
   closeButton.textContent = '✕';
   closeButton.style.position = 'absolute';
-  closeButton.style.top = '8px';
-  closeButton.style.right = '8px';
+  closeButton.style.top = '12px';
+  closeButton.style.right = '12px';
   closeButton.style.width = '28px';
   closeButton.style.height = '28px';
   closeButton.style.borderRadius = '50%';
@@ -1520,16 +1682,36 @@ function injectFirBulkWidget() {
   closeButton.style.padding = '0';
   closeButton.style.margin = '0';
   
+  // Enhanced close button hover and focus effects
   closeButton.addEventListener('mouseenter', () => {
-    closeButton.style.background = 'rgba(217, 83, 79, 0.2)';
+    closeButton.style.background = 'rgba(217, 83, 79, 0.25)';
     closeButton.style.color = '#d9534f';
-    closeButton.style.transform = 'scale(1.1)';
+    closeButton.style.transform = 'scale(1.15) rotate(90deg)';
+    closeButton.style.boxShadow = '0 2px 8px rgba(217, 83, 79, 0.3)';
   });
   
   closeButton.addEventListener('mouseleave', () => {
     closeButton.style.background = 'rgba(0, 0, 0, 0.1)';
     closeButton.style.color = '#666';
-    closeButton.style.transform = 'scale(1)';
+    closeButton.style.transform = 'scale(1) rotate(0deg)';
+    closeButton.style.boxShadow = 'none';
+  });
+  
+  closeButton.addEventListener('focus', () => {
+    closeButton.style.outline = 'none';
+    closeButton.style.boxShadow = '0 0 0 3px rgba(217, 83, 79, 0.3)';
+  });
+  
+  closeButton.addEventListener('blur', () => {
+    closeButton.style.boxShadow = 'none';
+  });
+  
+  closeButton.addEventListener('mousedown', () => {
+    closeButton.style.transform = 'scale(0.95) rotate(90deg)';
+  });
+  
+  closeButton.addEventListener('mouseup', () => {
+    closeButton.style.transform = 'scale(1.15) rotate(90deg)';
   });
 
   // Create form group wrapper with horizontal layout
@@ -1540,7 +1722,7 @@ function injectFirBulkWidget() {
   formGroup.style.gap = '10px';
   formGroup.style.position = 'relative';
 
-  // Beautiful textarea with fixed dimensions
+  // Beautiful textarea with fixed dimensions and enhanced UX
   const textarea = document.createElement('textarea');
   textarea.id = 'fir-bulk-input';
   textarea.className = 'form-control';
@@ -1549,23 +1731,47 @@ function injectFirBulkWidget() {
   textarea.style.height = '100px';
   textarea.style.resize = 'none';
   textarea.style.fontSize = '13px';
-  textarea.style.padding = '10px';
+  textarea.style.padding = '12px';
   textarea.style.border = '2px solid #e0e0e0';
-  textarea.style.borderRadius = '8px';
-  textarea.style.transition = 'all 0.3s ease';
+  textarea.style.borderRadius = '10px';
+  textarea.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
   textarea.style.fontFamily = 'inherit';
   textarea.style.lineHeight = '1.5';
+  textarea.style.background = '#fff';
+  textarea.style.color = '#333';
+  textarea.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
   
-  // Interactive focus effects
+  // Enhanced hover effect
+  textarea.addEventListener('mouseenter', () => {
+    if (document.activeElement !== textarea) {
+      textarea.style.borderColor = '#5cb85c';
+      textarea.style.boxShadow = '0 4px 8px rgba(92, 184, 92, 0.15)';
+      textarea.style.transform = 'translateY(-1px)';
+    }
+  });
+  
+  textarea.addEventListener('mouseleave', () => {
+    if (document.activeElement !== textarea) {
+      textarea.style.borderColor = '#e0e0e0';
+      textarea.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
+      textarea.style.transform = 'translateY(0)';
+    }
+  });
+  
+  // Enhanced focus effects
   textarea.addEventListener('focus', () => {
     textarea.style.borderColor = '#5cb85c';
-    textarea.style.boxShadow = '0 0 0 3px rgba(92, 184, 92, 0.1)';
+    textarea.style.boxShadow = '0 0 0 4px rgba(92, 184, 92, 0.15), 0 4px 12px rgba(92, 184, 92, 0.2)';
     textarea.style.outline = 'none';
+    textarea.style.transform = 'translateY(-2px)';
+    textarea.style.background = '#fafffe';
   });
   
   textarea.addEventListener('blur', () => {
     textarea.style.borderColor = '#e0e0e0';
-    textarea.style.boxShadow = 'none';
+    textarea.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.05)';
+    textarea.style.transform = 'translateY(0)';
+    textarea.style.background = '#fff';
   });
   
   formGroup.appendChild(textarea);
@@ -1602,6 +1808,20 @@ function injectFirBulkWidget() {
   firLabel.style.marginRight = '8px';
   firLabel.style.fontWeight = '500';
   firLabel.style.color = '#333';
+  firLabel.style.transition = 'all 0.2s ease';
+  firLabel.style.padding = '2px 4px';
+  firLabel.style.borderRadius = '4px';
+  
+  // Enhanced hover effect for labels
+  firLabel.addEventListener('mouseenter', () => {
+    firLabel.style.color = '#5cb85c';
+    firLabel.style.background = 'rgba(92, 184, 92, 0.1)';
+  });
+  
+  firLabel.addEventListener('mouseleave', () => {
+    firLabel.style.color = '#333';
+    firLabel.style.background = 'transparent';
+  });
 
   const rodRadio = document.createElement('input');
   rodRadio.type = 'radio';
@@ -1617,6 +1837,20 @@ function injectFirBulkWidget() {
   rodLabel.style.cursor = 'pointer';
   rodLabel.style.fontWeight = '500';
   rodLabel.style.color = '#333';
+  rodLabel.style.transition = 'all 0.2s ease';
+  rodLabel.style.padding = '2px 4px';
+  rodLabel.style.borderRadius = '4px';
+  
+  // Enhanced hover effect for labels
+  rodLabel.addEventListener('mouseenter', () => {
+    rodLabel.style.color = '#5cb85c';
+    rodLabel.style.background = 'rgba(92, 184, 92, 0.1)';
+  });
+  
+  rodLabel.addEventListener('mouseleave', () => {
+    rodLabel.style.color = '#333';
+    rodLabel.style.background = 'transparent';
+  });
 
   toggleContainer.appendChild(firRadio);
   toggleContainer.appendChild(firLabel);
@@ -1636,64 +1870,85 @@ function injectFirBulkWidget() {
 
   buttonContainer.appendChild(toggleContainer);
 
-  // Interactive toggle button - starts as "Bulk Search"
+  // Interactive toggle button - starts as "Bulk Search" with enhanced UX
   const toggleBtn = document.createElement('button');
   toggleBtn.type = 'button';
   toggleBtn.id = 'fir-bulk-toggle-btn';
   toggleBtn.textContent = '🚀 Bulk Search';
-  toggleBtn.style.padding = '12px 20px';
+  toggleBtn.style.padding = '14px 24px';
   toggleBtn.style.fontSize = '14px';
   toggleBtn.style.fontWeight = '600';
   toggleBtn.style.border = 'none';
-  toggleBtn.style.borderRadius = '8px';
+  toggleBtn.style.borderRadius = '10px';
   toggleBtn.style.cursor = 'pointer';
   toggleBtn.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
   toggleBtn.style.position = 'relative';
   toggleBtn.style.overflow = 'hidden';
   toggleBtn.style.minWidth = '140px';
-  toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+  toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)';
   toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
   toggleBtn.style.color = '#fff';
   toggleBtn.style.textTransform = 'uppercase';
   toggleBtn.style.letterSpacing = '0.5px';
   
-  // Add hover effect
+  // Enhanced hover effect
   toggleBtn.addEventListener('mouseenter', () => {
-    toggleBtn.style.transform = 'translateY(-2px)';
-    toggleBtn.style.boxShadow = '0 6px 16px rgba(92, 184, 92, 0.4)';
+    if (!firBulkActive) {
+      toggleBtn.style.transform = 'translateY(-3px) scale(1.02)';
+      toggleBtn.style.boxShadow = '0 8px 20px rgba(92, 184, 92, 0.4), 0 4px 8px rgba(0, 0, 0, 0.15)';
+      toggleBtn.style.background = 'linear-gradient(135deg, #66c866 0%, #5cbe5c 100%)';
+    }
   });
   
   toggleBtn.addEventListener('mouseleave', () => {
     if (!firBulkActive) {
-      toggleBtn.style.transform = 'translateY(0)';
-      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3)';
+      toggleBtn.style.transform = 'translateY(0) scale(1)';
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)';
+      toggleBtn.style.background = 'linear-gradient(135deg, #5cb85c 0%, #4cae4c 100%)';
     }
   });
   
-  // Add active/pressed effect
+  // Enhanced focus effect for accessibility
+  toggleBtn.addEventListener('focus', () => {
+    toggleBtn.style.outline = 'none';
+    toggleBtn.style.boxShadow = '0 0 0 4px rgba(92, 184, 92, 0.3), 0 4px 12px rgba(92, 184, 92, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)';
+  });
+  
+  toggleBtn.addEventListener('blur', () => {
+    if (!firBulkActive) {
+      toggleBtn.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 2px 4px rgba(0, 0, 0, 0.1)';
+    }
+  });
+  
+  // Enhanced active/pressed effect
   toggleBtn.addEventListener('mousedown', () => {
-    toggleBtn.style.transform = 'translateY(0) scale(0.98)';
+    toggleBtn.style.transform = 'translateY(0) scale(0.97)';
+    toggleBtn.style.boxShadow = '0 2px 8px rgba(92, 184, 92, 0.3), 0 1px 2px rgba(0, 0, 0, 0.1)';
   });
   
   toggleBtn.addEventListener('mouseup', () => {
     if (!firBulkActive) {
-      toggleBtn.style.transform = 'translateY(-2px)';
+      toggleBtn.style.transform = 'translateY(-3px) scale(1.02)';
+      toggleBtn.style.boxShadow = '0 8px 20px rgba(92, 184, 92, 0.4), 0 4px 8px rgba(0, 0, 0, 0.15)';
     }
   });
   
   buttonContainer.appendChild(toggleBtn);
 
-  // Status indicator - compact and beautiful
+  // Status indicator - compact and beautiful with enhanced UX
   const status = document.createElement('div');
   status.id = 'fir-bulk-status-inline';
-  status.style.fontSize = '11px';
+  status.style.fontSize = '12px';
   status.style.color = '#666';
-  status.style.minHeight = '16px';
+  status.style.minHeight = '20px';
   status.style.textAlign = 'center';
-  status.style.padding = '4px 8px';
-  status.style.borderRadius = '4px';
+  status.style.padding = '6px 10px';
+  status.style.borderRadius = '6px';
   status.style.background = '#f8f9fa';
-  status.style.transition = 'all 0.3s ease';
+  status.style.transition = 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+  status.style.border = '1px solid #e9ecef';
+  status.style.fontWeight = '500';
+  status.style.boxShadow = '0 1px 2px rgba(0, 0, 0, 0.05)';
   buttonContainer.appendChild(status);
 
   formGroup.appendChild(buttonContainer);
@@ -1732,15 +1987,19 @@ function injectFirBulkWidget() {
     expandedContent.style.display = 'none';
     roundButton.style.display = 'flex';
     
-    // Animate container collapse
+    // Animate container collapse - reset all expanded styles
     colDiv.style.display = 'flex';
     colDiv.style.width = '60px';
     colDiv.style.height = '60px';
+    colDiv.style.minWidth = '60px';
     colDiv.style.borderRadius = '50px';
     colDiv.style.padding = '0';
     colDiv.style.border = 'none';
     colDiv.style.boxShadow = '0 4px 12px rgba(92, 184, 92, 0.3), 0 0 20px rgba(92, 184, 92, 0.1)';
     colDiv.style.cursor = 'pointer';
+    colDiv.style.background = '#fff';
+    colDiv.style.backdropFilter = 'none';
+    colDiv.style.webkitBackdropFilter = 'none';
     
     // Update position after collapse
     setTimeout(updateWidgetPosition, 100);
